@@ -10,7 +10,7 @@ TouchPin::TouchPin(uint8_t pin, std::function<void(uint8_t, bool)> pressRoutine,
 void TouchPin::read(){
   int touchVal = 0;
   for(int i=0; i< samples; i++){
-    touchVal += touchRead(T0);    
+    touchVal += touchRead(pin);    
   }
   touchVal /= samples;
   //Serial.printf("%d\n", touchVal);

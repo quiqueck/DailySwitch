@@ -8,6 +8,7 @@
 #include "DailyBluetoothSwitch.h"
 
 TouchPin* t1 = NULL;
+TouchPin* t2 = NULL;
 DailyBluetoothSwitchServer* dbss = NULL;
 SwitchUI* ui = NULL;
 void setup()
@@ -21,6 +22,7 @@ void setup()
     ui = new SwitchUI(buttonEvent, false);
     dbss = new DailyBluetoothSwitchServer("001");
     t1 = new TouchPin(T0, touchEvent, 20);
+    t2 = new TouchPin(T1, forceCalib, 20);
     
 	pinMode(TFT_IRQ, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(TFT_IRQ), message, CHANGE);
@@ -31,6 +33,7 @@ void setup()
 void loop()
 {
 	t1->read();
+    t2->read();
     ui->scanTouch();
 }
 
@@ -39,8 +42,13 @@ void message(){
 }
 
 void buttonEvent(uint8_t id, uint8_t state){
-    Serial.printf("Sending %d, %d", id, state);
+    Serial.printf("Sending %d, %d\n", id, state);
     dbss->sendNotification(id, (DailyBluetoothSwitchServer::DBSNotificationStates)state);
+}
+
+void forceCalib(uint8_t pin, bool pressed){
+    Serial.println("Requested Recalibration");
+    ui->startTouchCalibration();
 }
 
 void touchEvent(uint8_t pin, bool pressed){

@@ -57,9 +57,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, bool forc
 
     this->prepareTouchCalibration(force_calibration);
 
-    Serial.println("Done Initializing TFT");
-
-    this->redrawAll();
+    Serial.println("Done Initializing TFT");    
 }
 
 void SwitchUI::prepareTouchCalibration(bool force_calibration){
@@ -91,6 +89,8 @@ void SwitchUI::startTouchCalibration(){
 
   Serial.println("Writing Calibration");
   FileSystem::global()->writeCalibrationFile((const char*)calibrationData);  
+
+  this->redrawAll();
 }
 
 void SwitchUI::setBrightness(uint8_t val){
@@ -133,7 +133,7 @@ void SwitchUI::scanTouch(){
 
     if (!didDim && delta > 10000000) {
         didDim = true;
-        this->setBrightness(0x20);
+        this->setBrightness(0x10);
     }
   
     if (tft.getTouch(&x, &y)) {
