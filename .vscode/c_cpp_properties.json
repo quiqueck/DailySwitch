@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Users/frank/Documents/Arduino/hardware/espressif/esp32/**",
+                "/Users/frank/Documents/Arduino/hardware/espressif/esp32/libraries/**",
+                "/Users/frank/Documents/Arduino/libraries/ESP32_AnalogWrite-master/**",
+                "/Users/frank/Documents/Arduino/libraries/TFT_eSPI/**",
+                "/Users/frank/Documents/Arduino/libraries/TFT_eFEX/**",
+                "/Users/frank/Documents/Arduino/libraries/TFTShape/**",
+                "${workspace}/**"
+            ],
+            "forcedInclude": [],
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "intelliSenseMode": "clang-x64",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
