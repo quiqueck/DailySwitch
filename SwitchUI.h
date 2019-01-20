@@ -1,21 +1,53 @@
 #ifndef __SWITCH_UI_H__
 #define __SWITCH_UI_H__
+
 #include <TFT_eSPI.h>
+#include <functional>
+#include "DailyBluetoothSwitch.h"
 
 #define TOUCH_BOX_SIZE 86
 
+struct ButtonRect {
+    const int16_t l;
+    const int16_t t;
+    const int16_t b; 
+    const int16_t r;
+    const uint16_t col;
+    const uint8_t id;
+    const DailyBluetoothSwitchServer::DBSNotificationStates state;
+    const char* name;
+    inline int16_t w() { return r-l;}
+    inline int16_t h() { return b-t;}
+
+    ButtonRect(uint8_t id, DailyBluetoothSwitchServer::DBSNotificationStates state, const char* name, int16_t lIn, int16_t tIn, int16_t rIn, int16_t bIn, uint16_t colIn):
+    l(lIn),r(rIn),t(tIn),b(bIn),col(colIn), id(id), state(state), name(name){}
+};
+
 class SwitchUI{
     public:
-        SwitchUI(bool force_calibration=false);
+        SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, bool force_calibration=false);
         
         void setBrightness(uint8_t val);
         void startTouchCalibration();
+        void redrawAll();
+        void scanTouch();
     protected:
         void prepareTouchCalibration(bool force_calibration=false);
+        int8_t buttonAt(uint16_t x, uint16_t y);
     public:
         TFT_eSPI tft;
     private:
-        uint16_t calibrationData[5];
+        std::function<void(uint8_t, uint8_t)> pressRoutine;        
+
+        ButtonRect* buttons[9];        
+        uint8_t buttonCount;
+
+        int8_t pressedButton;
+        long lastDown;
+        long touchStart;
+        bool didDim;
+
+        uint16_t calibrationData[10];
 };
 
 #endif

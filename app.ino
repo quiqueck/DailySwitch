@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <FunctionalInterrupt.h>
 #include "ESP32Setup.h"
-#include "DailyBluetoothSwitch.h"
+
 #include "TouchPin.h"
 #include "SwitchUI.h"
+
+#include "DailyBluetoothSwitch.h"
 
 TouchPin* t1 = NULL;
 DailyBluetoothSwitchServer* dbss = NULL;
@@ -16,7 +18,7 @@ void setup()
     pinMode(SDCARD_CS, OUTPUT);
     digitalWrite(SDCARD_CS, HIGH);
 
-    ui = new SwitchUI(true);
+    ui = new SwitchUI(buttonEvent, false);
     dbss = new DailyBluetoothSwitchServer("001");
     t1 = new TouchPin(T0, touchEvent, 20);
     
@@ -29,15 +31,21 @@ void setup()
 void loop()
 {
 	t1->read();
+    ui->scanTouch();
 }
 
 void message(){
-    Serial.println("TOUCH");
+    //Serial.println("TOUCH");
+}
+
+void buttonEvent(uint8_t id, uint8_t state){
+    Serial.printf("Sending %d, %d", id, state);
+    dbss->sendNotification(id, (DailyBluetoothSwitchServer::DBSNotificationStates)state);
 }
 
 void touchEvent(uint8_t pin, bool pressed){
     dbss->sendNotification(
         0, 
-        pressed?DBSNotificationStates::ON : DBSNotificationStates::OFF
+        pressed?DailyBluetoothSwitchServer::DBSNotificationStates::ON : DailyBluetoothSwitchServer::DBSNotificationStates::OFF
     );
 }
