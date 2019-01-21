@@ -1,6 +1,7 @@
 #include "DailyBluetoothSwitch.h"
 
 DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
+    whenConnected = NULL;
     BLEClientConnected = false;
     characteristic = NULL;
     std::string baseName = "AmberSmart.Switch";
@@ -13,7 +14,7 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
     BLEService *pService = pServer->createService(SERVICE_UUID);
     characteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
-                                         BLECharacteristic::PROPERTY_NOTIFY
+                                         BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
                                        );
     BLEDescriptor* pSwitchPanelDescription = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
     pSwitchPanelDescription->setValue("Button Press Notification");
@@ -49,9 +50,15 @@ void DailyBluetoothSwitchServer::sendNotification(uint16_t id, DBSNotificationSt
 void DailyBluetoothSwitchServer::onConnect(BLEServer* pServer) {
     Serial.println("Connected");
     BLEClientConnected = true;
+    if (whenConnected){
+        whenConnected(true);
+    }
 };
 
 void DailyBluetoothSwitchServer::onDisconnect(BLEServer* pServer) {
     Serial.println("Disconnected");
     BLEClientConnected = false;
+    if (whenConnected){
+        whenConnected(false);
+    }
 }

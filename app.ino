@@ -21,8 +21,10 @@ void setup()
 
     ui = new SwitchUI(buttonEvent, false);
     dbss = new DailyBluetoothSwitchServer("001");
-    t1 = new TouchPin(T0, touchEvent, 20);
-    t2 = new TouchPin(T1, forceCalib, 20);
+    dbss->setConnectionCallback(stateChanged);
+
+    t1 = new TouchPin(T0, forceCalib, 20);
+    t2 = new TouchPin(T1, touchEvent, 20);
     
 	pinMode(TFT_IRQ, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(TFT_IRQ), message, CHANGE);
@@ -30,10 +32,14 @@ void setup()
     dbss->startAdvertising();
 }
 
+void stateChanged(bool state){
+    ui->connectionStateChanged(state);
+}
+
 void loop()
 {
 	t1->read();
-    t2->read();
+    //t2->read();
     ui->scanTouch();
 }
 

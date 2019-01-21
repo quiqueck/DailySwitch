@@ -31,12 +31,15 @@ class SwitchUI{
         void startTouchCalibration();
         void redrawAll();
         void scanTouch();
+        void connectionStateChanged(bool state);
     protected:
         void prepareTouchCalibration(bool force_calibration=false);
         int8_t buttonAt(uint16_t x, uint16_t y);
+        void drawConnectionState();
     public:
         TFT_eSPI tft;
     private:
+        bool wasConnected;
         std::function<void(uint8_t, uint8_t)> pressRoutine;        
 
         ButtonRect* buttons[9];        
@@ -45,7 +48,8 @@ class SwitchUI{
         int8_t pressedButton;
         long lastDown;
         long touchStart;
-        bool didDim;
+        uint8_t didDim; 
+        bool blockUntilRelease;   
 
         uint16_t calibrationData[10];
 };

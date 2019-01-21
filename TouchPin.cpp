@@ -13,7 +13,7 @@ void TouchPin::read(){
     touchVal += touchRead(pin);    
   }
   touchVal /= samples;
-  //Serial.printf("%d\n", touchVal);
+  //Serial.printf("%d: %d\n", pin, touchVal);
   if (touchVal<40){
       lastEvent = micros();
       if (!hadTouch){

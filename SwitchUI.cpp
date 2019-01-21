@@ -2,6 +2,7 @@
 #include "FileSystem.h"
 #include <analogWrite.h>
 #include "DailyBluetoothSwitch.h"
+#include <soc/rtc.h>
 
 
 #define HG() TOUCH_BOX_SIZE
@@ -21,11 +22,13 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, bool force_calibration):tft(TFT_eSPI()){
     this->pressRoutine = pressRoutine;
+    wasConnected = false;
     buttonCount = 9;
     pressedButton = -1;
     lastDown = micros();
     touchStart = 0;
-    didDim = false;
+    didDim = 0;
+    blockUntilRelease = false;
     
     buttons[0] = new ButtonRect(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Wohnzimmer",           
         LEF(), TOP(0), XP1(), BOT(0), rgb(220, 0, 0));
@@ -71,6 +74,7 @@ void SwitchUI::prepareTouchCalibration(bool force_calibration){
 
         // calibration data valid
         tft.setTouch(calibrationData);
+        this->redrawAll();
     } else {
         startTouchCalibration();
     }
@@ -94,7 +98,22 @@ void SwitchUI::startTouchCalibration(){
 }
 
 void SwitchUI::setBrightness(uint8_t val){
-    analogWrite(TFT_BL, val);
+    /*if (val==0) digitalWrite(TFT_BL, LOW);
+    else if (val=0xff) digitalWrite(TFT_BL, HIGH);
+    else*/ analogWrite(TFT_BL, val);
+}
+
+void SwitchUI::connectionStateChanged(bool state){
+    wasConnected = state;
+    drawConnectionState();
+}
+
+void SwitchUI::drawConnectionState(){
+    tft.fillRect(20, 440, 100, 40, TFT_WHITE);
+    tft.setCursor(20, 460, 2);
+    tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
+    if (wasConnected) tft.println("connected");
+    else tft.println("NOT connected");
 }
 
 void SwitchUI::redrawAll(){
@@ -109,6 +128,7 @@ void SwitchUI::redrawAll(){
 
     Serial.println("Fill Rest");
     tft.fillRect(LEF(), maxY, RIG()-LEF(), 480-maxY, TFT_WHITE);
+    drawConnectionState();
 }
 
 int8_t SwitchUI::buttonAt(uint16_t x, uint16_t y){
@@ -124,37 +144,78 @@ void SwitchUI::scanTouch(){
     uint16_t x, y;
     long delta = micros() - lastDown;
 
-    if (delta > 500000) {
+    if (delta > 200000) {
         if (pressedButton>=0) {
             tft.fillRect(buttons[pressedButton]->l, buttons[pressedButton]->t, buttons[pressedButton]->w(), buttons[pressedButton]->h(), buttons[pressedButton]->col);
             pressedButton = -1;
         }
     }
 
-    if (!didDim && delta > 10000000) {
-        didDim = true;
+    if (didDim<1 && delta > 10000000) {
+        Serial.println("dim=1");
+        didDim = 1;
         this->setBrightness(0x10);
+    } else if (didDim<2 && delta > 30000000) {
+        Serial.println("dim=2");
+        delay(120);
+        didDim = 2;
+        this->setBrightness(0x0);        
+        rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
+    } else if (didDim<3 && delta > 60000000) {
+        Serial.println("dim=3");
+        didDim = 3;
+        tft.writecommand(0x10);
+        delay(6);                
     }
   
     if (tft.getTouch(&x, &y)) {
         if (x>0 && y>0) {
-            didDim = false;
-            this->setBrightness(0xFF);
-            int8_t nowButton = buttonAt(x, y);
-            if (pressedButton != nowButton){
-                if (pressedButton>=0) {
-                    tft.fillRect(buttons[pressedButton]->l, buttons[pressedButton]->t, buttons[pressedButton]->w(), buttons[pressedButton]->h(), buttons[pressedButton]->col);
+            lastDown = micros();
+            if (didDim != 0){ 
+                bool discardTouch = false;
+                Serial.println("dim=0");               
+                if (didDim >= 3) {
+                    discardTouch = true;
+                    tft.writecommand(0x11);
+                    delay(120);
+                } else if (didDim >= 2) {
+                    discardTouch = true;
+                    rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
                 }
-                if (nowButton>=0) {
-                    //Serial.printf("Button %d %x\n", nowButton, buttons);
-                    //Serial.printf("    l: %d, t: %d, r:%d, b:%d, col: %x \n", buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->r, buttons[nowButton]->b,  buttons[nowButton]->col); 
-                    tft.fillRect(buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->w(), buttons[nowButton]->h(), TFT_YELLOW);
-                    this->pressRoutine(buttons[nowButton]->id, buttons[nowButton]->state);
+                didDim = 0;
+                this->setBrightness(0xFF);
+                if (discardTouch) {
+                    blockUntilRelease = true;
+                    return;
                 }
-                pressedButton = nowButton;           
+            }
+
+            if (!blockUntilRelease){
+                int8_t nowButton = buttonAt(x, y);
+                if (pressedButton != nowButton){
+                    if (pressedButton>=0) {
+                        tft.fillRect(buttons[pressedButton]->l, buttons[pressedButton]->t, buttons[pressedButton]->w(), buttons[pressedButton]->h(), buttons[pressedButton]->col);
+                    }
+                    if (nowButton>=0) {
+                        //Serial.printf("Button %d %x\n", nowButton, buttons);
+                        //Serial.printf("    l: %d, t: %d, r:%d, b:%d, col: %x \n", buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->r, buttons[nowButton]->b,  buttons[nowButton]->col); 
+                        tft.fillRect(buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->w(), buttons[nowButton]->h(), TFT_YELLOW);
+                        this->pressRoutine(buttons[nowButton]->id, buttons[nowButton]->state);
+                    }
+                    pressedButton = nowButton;           
+                }                
             }
             lastDown = micros();
+        } else {
+            blockUntilRelease = false;
         }
+    } else {
+        blockUntilRelease = false;
+        
     }
-    delay(100);
+    if (didDim==2){
+        delay(200);
+    } else if (didDim>2){
+        delay(300);
+    }
 }
