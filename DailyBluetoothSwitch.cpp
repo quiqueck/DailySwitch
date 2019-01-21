@@ -14,28 +14,31 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
     BLEService *pService = pServer->createService(SERVICE_UUID);
     characteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
-                                         BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+                                         BLECharacteristic::PROPERTY_NOTIFY                                         
                                        );
     BLEDescriptor* pSwitchPanelDescription = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
     pSwitchPanelDescription->setValue("Button Press Notification");
     characteristic->addDescriptor(pSwitchPanelDescription);
     characteristic->addDescriptor(new BLE2902());
-    characteristic->setValue("{}");
+    characteristic->setValue("{\"id\":-1, \"state\":0}");
     pService->start();
 
     // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     BLEAdvertisementData myAdvertismentData;
     
+    myAdvertismentData.setCompleteServices(pService->getUUID());
     myAdvertismentData.setName(baseName + "." + name);
+
     pAdvertising->setAdvertisementData(myAdvertismentData);
-    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->addServiceUUID(pService->getUUID());
     pAdvertising->setScanResponse(true);
     pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
     pAdvertising->setMinPreferred(0x12);
 }
 
 void DailyBluetoothSwitchServer::startAdvertising() {
+    Serial.printf("Started Advertising...");
     BLEDevice::startAdvertising();
 }
 
@@ -48,7 +51,7 @@ void DailyBluetoothSwitchServer::sendNotification(uint16_t id, DBSNotificationSt
 }
 
 void DailyBluetoothSwitchServer::onConnect(BLEServer* pServer) {
-    Serial.println("Connected");
+    Serial.printf("Connected %x\n‚", pServer);
     BLEClientConnected = true;
     if (whenConnected){
         whenConnected(true);
@@ -56,7 +59,7 @@ void DailyBluetoothSwitchServer::onConnect(BLEServer* pServer) {
 };
 
 void DailyBluetoothSwitchServer::onDisconnect(BLEServer* pServer) {
-    Serial.println("Disconnected");
+    Serial.printf("Disconnected %x\n", pServer);
     BLEClientConnected = false;
     if (whenConnected){
         whenConnected(false);

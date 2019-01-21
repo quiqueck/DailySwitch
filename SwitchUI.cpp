@@ -9,7 +9,7 @@
 #define TOP(__nr) (__nr * HG())
 #define BOT(__nr) (__nr * HG() + HG()-1) 
 #define LEF() 0
-#define RIG() 320
+#define RIG() tft.width()
 #define XP1() 170
 #define XP2() (RIG() - XP1()) / 2 + XP1()
 
@@ -143,6 +143,7 @@ int8_t SwitchUI::buttonAt(uint16_t x, uint16_t y){
 void SwitchUI::scanTouch(){
     uint16_t x, y;
     long delta = micros() - lastDown;
+    
 
     if (delta > 200000) {
         if (pressedButton>=0) {
@@ -150,7 +151,7 @@ void SwitchUI::scanTouch(){
             pressedButton = -1;
         }
     }
-
+//Serial.printf("didDim %d @ %d\n", didDim, delta);
     if (didDim<1 && delta > 10000000) {
         Serial.println("dim=1");
         didDim = 1;
@@ -169,7 +170,8 @@ void SwitchUI::scanTouch(){
     }
   
     if (tft.getTouch(&x, &y)) {
-        if (x>0 && y>0) {
+        if (x>0 && y>0 && x<tft.width() && y<tft.height()) {
+            Serial.printf("touch %d, %d\n", x, y);
             lastDown = micros();
             if (didDim != 0){ 
                 bool discardTouch = false;
@@ -213,9 +215,9 @@ void SwitchUI::scanTouch(){
         blockUntilRelease = false;
         
     }
-    if (didDim==2){
+    /*if (didDim==2){
         delay(200);
     } else if (didDim>2){
         delay(300);
-    }
+    }*/
 }

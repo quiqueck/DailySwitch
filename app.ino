@@ -30,14 +30,30 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(TFT_IRQ), message, CHANGE);
 
     dbss->startAdvertising();
+
+    //esp_sleep_enable_touchpad_wakeup();
+    //esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 0);
+    //esp_deep_sleep_start();
 }
 
+bool triggerStateUpdate = false;
+bool triggerCalibration = false;
 void stateChanged(bool state){
-    ui->connectionStateChanged(state);
+    triggerStateUpdate = true;    
 }
 
 void loop()
 {
+    if (triggerStateUpdate) {
+        triggerStateUpdate = false;
+        ui->connectionStateChanged(dbss->connectionState());
+    }
+
+    if (triggerCalibration) {
+        ui->startTouchCalibration();
+        triggerCalibration = false;
+    }
+
 	t1->read();
     //t2->read();
     ui->scanTouch();
@@ -52,9 +68,10 @@ void buttonEvent(uint8_t id, uint8_t state){
     dbss->sendNotification(id, (DailyBluetoothSwitchServer::DBSNotificationStates)state);
 }
 
+
 void forceCalib(uint8_t pin, bool pressed){
-    Serial.println("Requested Recalibration");
-    ui->startTouchCalibration();
+    triggerCalibration = true;
+    Serial.println("Requested Recalibration");    
 }
 
 void touchEvent(uint8_t pin, bool pressed){

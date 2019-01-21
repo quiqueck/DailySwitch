@@ -22,6 +22,8 @@ class DailyBluetoothSwitchServer : public BLEServerCallbacks {
         inline void setConnectionCallback(std::function<void(bool)> cb) {
             whenConnected = cb;
         }
+
+        inline bool connectionState() { return BLEClientConnected; }
     private:
         BLECharacteristic *characteristic;
     public: //BLEServerCallbacks
