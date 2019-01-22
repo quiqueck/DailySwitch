@@ -12,6 +12,7 @@
         "typeinfo": "cpp",
         "algorithm": "cpp",
         "functional": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "utility": "cpp"
     }
 }

@@ -14,12 +14,16 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
     BLEService *pService = pServer->createService(SERVICE_UUID);
     characteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
-                                         BLECharacteristic::PROPERTY_NOTIFY                                         
+                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY                  
                                        );
     BLEDescriptor* pSwitchPanelDescription = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
     pSwitchPanelDescription->setValue("Button Press Notification");
     characteristic->addDescriptor(pSwitchPanelDescription);
-    characteristic->addDescriptor(new BLE2902());
+
+    BLE2902* p2902 = new BLE2902();
+    p2902->setNotifications(true);
+    p2902->setIndications(true);
+    characteristic->addDescriptor(p2902);
     characteristic->setValue("{\"id\":-1, \"state\":0}");
     pService->start();
 
@@ -51,8 +55,10 @@ void DailyBluetoothSwitchServer::sendNotification(uint16_t id, DBSNotificationSt
 }
 
 void DailyBluetoothSwitchServer::onConnect(BLEServer* pServer) {
-    Serial.printf("Connected %x\n‚", pServer);
+    Serial.printf("Connected %x\n", pServer);
     BLEClientConnected = true;
+    characteristic->setValue("{\"id\":-1, \"state\":0}");
+    characteristic->notify();
     if (whenConnected){
         whenConnected(true);
     }
