@@ -4,13 +4,18 @@
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
+#include "SleepTimer.h"
 
 #include "DailyBluetoothSwitch.h"
 
 TouchPin* t1 = NULL;
-TouchPin* t2 = NULL;
 DailyBluetoothSwitchServer* dbss = NULL;
 SwitchUI* ui = NULL;
+SleepTimer* sleepTimer = NULL;
+
+portMUX_TYPE calibMux = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE btMux = portMUX_INITIALIZER_UNLOCKED;
+
 void setup()
 {
     Serial.begin(115200);
@@ -19,15 +24,16 @@ void setup()
     pinMode(SDCARD_CS, OUTPUT);
     digitalWrite(SDCARD_CS, HIGH);
 
-    ui = new SwitchUI(buttonEvent, false);
+    ui = new SwitchUI(buttonEvent, touchPanelEvent, false);
     dbss = new DailyBluetoothSwitchServer("001");
     dbss->setConnectionCallback(stateChanged);
 
     t1 = new TouchPin(T0, forceCalib, 20);
-    t2 = new TouchPin(T1, touchEvent, 20);
     
-	pinMode(TFT_IRQ, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(TFT_IRQ), message, CHANGE);
+	//pinMode(TFT_IRQ, INPUT);
+    //attachInterrupt(digitalPinToInterrupt(TFT_IRQ), touchEvent, FALLING);
+
+    SleepTimer::begin(ui);    
 
     dbss->startAdvertising();
 
@@ -36,31 +42,38 @@ void setup()
     //esp_deep_sleep_start();
 }
 
-bool triggerStateUpdate = false;
-bool triggerCalibration = false;
+volatile bool triggerStateUpdate = true;
+volatile bool triggerCalibration = false;
 void stateChanged(bool state){
-    triggerStateUpdate = true;    
+    //portENTER_CRITICAL_ISR(&btMux);
+    triggerStateUpdate = false;    
+    //portEXIT_CRITICAL_ISR(&btMux);
 }
 
 void loop()
 {
-    if (triggerStateUpdate) {
-        triggerStateUpdate = false;
+    if (!triggerStateUpdate) {
+        triggerStateUpdate = true;
         ui->connectionStateChanged(dbss->connectionState());
     }
 
     if (triggerCalibration) {
+        Serial.println("Starting Calibration...");
+        SleepTimer::global()->invalidate();
+        SleepTimer::global()->stop();
         ui->startTouchCalibration();
         triggerCalibration = false;
+        SleepTimer::global()->start();
     }
 
 	t1->read();
-    //t2->read();
     ui->scanTouch();
+    SleepTimer::global()->tick();
 }
 
-void message(){
-    //Serial.println("TOUCH");
+void touchEvent(){
+    static int ct = 0;
+    Serial.printf("TOUCH event %d\n", ct++);
 }
 
 void buttonEvent(uint8_t id, uint8_t state){
@@ -68,15 +81,14 @@ void buttonEvent(uint8_t id, uint8_t state){
     dbss->sendNotification(id, (DailyBluetoothSwitchServer::DBSNotificationStates)state);
 }
 
-
-void forceCalib(uint8_t pin, bool pressed){
-    triggerCalibration = true;
-    Serial.println("Requested Recalibration");    
+void touchPanelEvent(bool down){
+    if (down) SleepTimer::global()->stop();
+    else SleepTimer::global()->start();
 }
 
-void touchEvent(uint8_t pin, bool pressed){
-    dbss->sendNotification(
-        0, 
-        pressed?DailyBluetoothSwitchServer::DBSNotificationStates::ON : DailyBluetoothSwitchServer::DBSNotificationStates::OFF
-    );
+
+void forceCalib(uint8_t pin, bool pressed){
+    if (pressed=false){
+        triggerCalibration = true;        
+    }
 }

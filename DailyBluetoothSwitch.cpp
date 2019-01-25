@@ -14,7 +14,7 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
     BLEService *pService = pServer->createService(SERVICE_UUID);
     characteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
-                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY                  
+                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY       
                                        );
     BLEDescriptor* pSwitchPanelDescription = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
     pSwitchPanelDescription->setValue("Button Press Notification");

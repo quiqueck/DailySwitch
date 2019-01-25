@@ -2,6 +2,7 @@
 #include "FileSystem.h"
 #include <analogWrite.h>
 #include "DailyBluetoothSwitch.h"
+#include "SleepTimer.h"
 #include <soc/rtc.h>
 
 
@@ -20,15 +21,13 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
                ((31*(b+4))/255);
 }
 
-SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, bool force_calibration):tft(TFT_eSPI()){
-    this->pressRoutine = pressRoutine;
-    wasConnected = false;
-    buttonCount = 9;
-    pressedButton = -1;
+SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine){
+    state.wasConnected = false;
+    state.buttonCount = 9;
+    state.pressedButton = -1;
     lastDown = micros();
-    touchStart = 0;
-    didDim = 0;
-    blockUntilRelease = false;
+    state.touchDown = false;
+    state.blockUntilRelease = false;
     
     buttons[0] = new ButtonRect(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Wohnzimmer",           
         LEF(), TOP(0), XP1(), BOT(0), rgb(220, 0, 0));
@@ -103,8 +102,8 @@ void SwitchUI::setBrightness(uint8_t val){
     else*/ analogWrite(TFT_BL, val);
 }
 
-void SwitchUI::connectionStateChanged(bool state){
-    wasConnected = state;
+void SwitchUI::connectionStateChanged(bool stateIn){
+    state.wasConnected = stateIn;
     drawConnectionState();
 }
 
@@ -112,14 +111,14 @@ void SwitchUI::drawConnectionState(){
     tft.fillRect(20, 440, 100, 40, TFT_WHITE);
     tft.setCursor(20, 460, 2);
     tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
-    if (wasConnected) tft.println("connected");
+    if (state.wasConnected) tft.println("connected");
     else tft.println("NOT connected");
 }
 
 void SwitchUI::redrawAll(){
-    Serial.printf("Redraw all %d\n", buttonCount);
+    Serial.printf("Redraw all %d\n", state.buttonCount);
     int32_t maxY = 0;
-    for (uint8_t nr = 0; nr < buttonCount; nr++){
+    for (uint8_t nr = 0; nr < state.buttonCount; nr++){
         //Serial.printf("Button %d %x\n", nr, buttons);
         //Serial.printf("    l: %d, t: %d, r:%d, b:%d, col: %x \n", buttons[nr]->l, buttons[nr]->t, buttons[nr]->r, buttons[nr]->b, buttons[nr]->col);
         tft.fillRect(buttons[nr]->l, buttons[nr]->t, buttons[nr]->w(), buttons[nr]->h(), buttons[nr]->col);
@@ -132,7 +131,7 @@ void SwitchUI::redrawAll(){
 }
 
 int8_t SwitchUI::buttonAt(uint16_t x, uint16_t y){
-    for (uint8_t nr = 0; nr < buttonCount; nr++){
+    for (uint8_t nr = 0; nr < state.buttonCount; nr++){
         if (x>buttons[nr]->l && y > buttons[nr]->t && x < buttons[nr]->r && y < buttons[nr]->b)
             return nr;        
     }; 
@@ -140,84 +139,57 @@ int8_t SwitchUI::buttonAt(uint16_t x, uint16_t y){
     return -1;
 }
 
+
+
 void SwitchUI::scanTouch(){
     uint16_t x, y;
     long delta = micros() - lastDown;
+    //timer wrapped around
+    if (delta<0) { lastDown = micros(); }
     
+    //wait a bit before we send the touch-up event
+    if (delta > 200*1000) {
+        if (state.touchDown) touchRoutine(false);
+        state.touchDown = false;
+        state.blockUntilRelease = false;
 
-    if (delta > 200000) {
-        if (pressedButton>=0) {
-            tft.fillRect(buttons[pressedButton]->l, buttons[pressedButton]->t, buttons[pressedButton]->w(), buttons[pressedButton]->h(), buttons[pressedButton]->col);
-            pressedButton = -1;
+        if (state.pressedButton>=0) {
+            tft.fillRect(buttons[state.pressedButton]->l, buttons[state.pressedButton]->t, buttons[state.pressedButton]->w(), buttons[state.pressedButton]->h(), buttons[state.pressedButton]->col);
+            state.pressedButton = -1;
         }
     }
-//Serial.printf("didDim %d @ %d\n", didDim, delta);
-    if (didDim<1 && delta > 10000000) {
-        Serial.println("dim=1");
-        didDim = 1;
-        this->setBrightness(0x10);
-    } else if (didDim<2 && delta > 30000000) {
-        Serial.println("dim=2");
-        delay(120);
-        didDim = 2;
-        this->setBrightness(0x0);        
-        rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
-    } else if (didDim<3 && delta > 60000000) {
-        Serial.println("dim=3");
-        didDim = 3;
-        tft.writecommand(0x10);
-        delay(6);                
-    }
-  
-    if (tft.getTouch(&x, &y)) {
-        if (x>0 && y>0 && x<tft.width() && y<tft.height()) {
-            Serial.printf("touch %d, %d\n", x, y);
-            lastDown = micros();
-            if (didDim != 0){ 
-                bool discardTouch = false;
-                Serial.println("dim=0");               
-                if (didDim >= 3) {
-                    discardTouch = true;
-                    tft.writecommand(0x11);
-                    delay(120);
-                } else if (didDim >= 2) {
-                    discardTouch = true;
-                    rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
-                }
-                didDim = 0;
-                this->setBrightness(0xFF);
-                if (discardTouch) {
-                    blockUntilRelease = true;
-                    return;
-                }
-            }
-
-            if (!blockUntilRelease){
-                int8_t nowButton = buttonAt(x, y);
-                if (pressedButton != nowButton){
-                    if (pressedButton>=0) {
-                        tft.fillRect(buttons[pressedButton]->l, buttons[pressedButton]->t, buttons[pressedButton]->w(), buttons[pressedButton]->h(), buttons[pressedButton]->col);
-                    }
-                    if (nowButton>=0) {
-                        //Serial.printf("Button %d %x\n", nowButton, buttons);
-                        //Serial.printf("    l: %d, t: %d, r:%d, b:%d, col: %x \n", buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->r, buttons[nowButton]->b,  buttons[nowButton]->col); 
-                        tft.fillRect(buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->w(), buttons[nowButton]->h(), TFT_YELLOW);
-                        this->pressRoutine(buttons[nowButton]->id, buttons[nowButton]->state);
-                    }
-                    pressedButton = nowButton;           
-                }                
-            }
-            lastDown = micros();
-        } else {
-            blockUntilRelease = false;
-        }
-    } else {
-        blockUntilRelease = false;
+    
+    if (tft.getTouch(&x, &y) && x>0 && y>0 && x<tft.width() && y<tft.height()) {
+        if (!state.touchDown) touchRoutine(true);
+        state.touchDown = true;
+        lastDown = micros();
+        Serial.printf("touch %d, %d\n", x, y);
         
+        //ignore touches when we reactivate
+        if (SleepTimer::global()->currentState() >= 2) {
+            state.blockUntilRelease = true;   
+            SleepTimer::global()->invalidate();         
+            return;
+        }
+        SleepTimer::global()->invalidate();      
+
+        if (!state.blockUntilRelease){
+            int8_t nowButton = buttonAt(x, y);
+            if (state.pressedButton != nowButton){
+                if (state.pressedButton>=0) {
+                    tft.fillRect(buttons[state.pressedButton]->l, buttons[state.pressedButton]->t, buttons[state.pressedButton]->w(), buttons[state.pressedButton]->h(), buttons[state.pressedButton]->col);
+                }
+                if (nowButton>=0) {
+                    tft.fillRect(buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->w(), buttons[nowButton]->h(), TFT_YELLOW);
+                    this->pressRoutine(buttons[nowButton]->id, buttons[nowButton]->state);
+                }
+                state.pressedButton = nowButton;           
+            }                
+        }
+        lastDown = micros();        
+    } else {
+        /*if (touchDown) touchRoutine(false);
+        touchDown = false;
+        blockUntilRelease = false;*/
     }
-    /*if (didDim==2){
-        delay(200);
-    } else if (didDim>2){
-        delay(300);
-    }*/
 }

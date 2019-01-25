@@ -25,13 +25,16 @@ struct ButtonRect {
 
 class SwitchUI{
     public:
-        SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, bool force_calibration=false);
+        SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration=false);
         
         void setBrightness(uint8_t val);
         void startTouchCalibration();
         void redrawAll();
         void scanTouch();
         void connectionStateChanged(bool state);
+
+        inline void displayOff() { tft.writecommand(0x10); delay(6); }
+        inline void displayOn() { tft.writecommand(0x11); delay(6); }
     protected:
         void prepareTouchCalibration(bool force_calibration=false);
         int8_t buttonAt(uint16_t x, uint16_t y);
@@ -39,18 +42,23 @@ class SwitchUI{
     public:
         TFT_eSPI tft;
     private:
-        bool wasConnected;
-        std::function<void(uint8_t, uint8_t)> pressRoutine;        
+        const std::function<void(uint8_t, uint8_t)> pressRoutine;        
+        const std::function<void(bool)> touchRoutine;        
+
+        union{
+            struct{
+                uint8_t buttonCount     : 8;
+                int8_t pressedButton    : 8;
+                bool blockUntilRelease  : 1; 
+                bool touchDown          : 1; 
+                bool wasConnected       : 1;
+                uint32_t reserved       : 13;                
+            };
+            uint32_t val;
+        } state;
 
         ButtonRect* buttons[9];        
-        uint8_t buttonCount;
-
-        int8_t pressedButton;
         long lastDown;
-        long touchStart;
-        uint8_t didDim; 
-        bool blockUntilRelease;   
-
         uint16_t calibrationData[10];
 };
 
