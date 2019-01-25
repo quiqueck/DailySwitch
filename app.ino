@@ -86,9 +86,8 @@ void touchPanelEvent(bool down){
     else SleepTimer::global()->start();
 }
 
-
 void forceCalib(uint8_t pin, bool pressed){
-    if (pressed=false){
+    if (pressed==false){
         triggerCalibration = true;        
     }
 }

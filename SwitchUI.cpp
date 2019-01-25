@@ -3,6 +3,7 @@
 #include <analogWrite.h>
 #include "DailyBluetoothSwitch.h"
 #include "SleepTimer.h"
+#include "Button.h"
 #include <soc/rtc.h>
 
 
@@ -23,34 +24,33 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine){
     state.wasConnected = false;
-    state.buttonCount = 9;
-    state.pressedButton = -1;
+    pressedButton = NULL;
     lastDown = micros();
     state.touchDown = false;
     state.blockUntilRelease = false;
     
-    buttons[0] = new ButtonRect(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Wohnzimmer",           
-        LEF(), TOP(0), XP1(), BOT(0), rgb(220, 0, 0));
-    buttons[1] = new ButtonRect(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
-        XP1(), TOP(0), XP2(), BOT(0), rgb(255, 0, 0));
-    buttons[2] = new ButtonRect(1, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
-        XP2(), TOP(0), RIG(), BOT(0), rgb(150, 0, 0));
+    this->addButton(new Button(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Wohnzimmer",           
+        LEF(), TOP(0), XP1(), BOT(0), rgb(220, 0, 0)));
+    this->addButton(new Button(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
+        XP1(), TOP(0), XP2(), BOT(0), rgb(255, 0, 0)));
+    this->addButton(new Button(1, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
+        XP2(), TOP(0), RIG(), BOT(0), rgb(150, 0, 0)));
 
-    buttons[3] = new ButtonRect(2, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Eszimmer",
-        LEF(), TOP(1), XP1(), BOT(1), rgb(0, 220, 0));
-    buttons[4] = new ButtonRect(2, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
-        XP1(), TOP(1), XP2(), BOT(1), rgb(0, 255, 0));
-    buttons[5] = new ButtonRect(2, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
-        XP2(), TOP(1), RIG(), BOT(1), rgb(0, 150, 0));
+    this->addButton(new Button(2, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Eszimmer",
+        LEF(), TOP(1), XP1(), BOT(1), rgb(0, 220, 0)));
+    this->addButton(new Button(2, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
+        XP1(), TOP(1), XP2(), BOT(1), rgb(0, 255, 0)));
+    this->addButton(new Button(2, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
+        XP2(), TOP(1), RIG(), BOT(1), rgb(0, 150, 0)));
 
-    buttons[6] = new ButtonRect(3, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Küche",           
-        LEF(), TOP(2), XP1(), BOT(2), rgb(0, 0, 220));
-    buttons[7] = new ButtonRect(3, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
-        XP1(), TOP(2), XP2(), BOT(2), rgb(0, 0, 255));
-    buttons[8] = new ButtonRect(3, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
-        XP2(), TOP(2), RIG(), BOT(2), rgb(0, 0, 150));
+    this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Küche",           
+        LEF(), TOP(2), XP1(), BOT(2), rgb(0, 0, 220)));
+    this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
+        XP1(), TOP(2), XP2(), BOT(2), rgb(0, 0, 255)));
+    this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
+        XP2(), TOP(2), RIG(), BOT(2), rgb(0, 0, 150)));
         
-    Serial.printf("Initialized Buttons %x %d\n", buttons, buttons[0]->l);
+    Serial.printf("Initialized Buttons %d\n", buttons.size());
     
     Serial.println("Initializing TFT...");
     
@@ -116,27 +116,24 @@ void SwitchUI::drawConnectionState(){
 }
 
 void SwitchUI::redrawAll(){
-    Serial.printf("Redraw all %d\n", state.buttonCount);
+    Serial.printf("Redraw all %d\n", buttons.size());
     int32_t maxY = 0;
-    for (uint8_t nr = 0; nr < state.buttonCount; nr++){
-        //Serial.printf("Button %d %x\n", nr, buttons);
-        //Serial.printf("    l: %d, t: %d, r:%d, b:%d, col: %x \n", buttons[nr]->l, buttons[nr]->t, buttons[nr]->r, buttons[nr]->b, buttons[nr]->col);
-        tft.fillRect(buttons[nr]->l, buttons[nr]->t, buttons[nr]->w(), buttons[nr]->h(), buttons[nr]->col);
-        if (buttons[nr]->b > maxY) maxY = buttons[nr]->b;
-    };    
+    for (auto&& button : buttons) {
+        button->draw(this);
+        if (button->b > maxY) maxY = button->b;
+    }    
 
     Serial.println("Fill Rest");
     tft.fillRect(LEF(), maxY, RIG()-LEF(), 480-maxY, TFT_WHITE);
     drawConnectionState();
 }
 
-int8_t SwitchUI::buttonAt(uint16_t x, uint16_t y){
-    for (uint8_t nr = 0; nr < state.buttonCount; nr++){
-        if (x>buttons[nr]->l && y > buttons[nr]->t && x < buttons[nr]->r && y < buttons[nr]->b)
-            return nr;        
-    }; 
+const Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
+    for (auto&& button : buttons) {
+        if (button->inside(x, y)) return button;        
+    } 
 
-    return -1;
+    return NULL;
 }
 
 
@@ -153,9 +150,9 @@ void SwitchUI::scanTouch(){
         state.touchDown = false;
         state.blockUntilRelease = false;
 
-        if (state.pressedButton>=0) {
-            tft.fillRect(buttons[state.pressedButton]->l, buttons[state.pressedButton]->t, buttons[state.pressedButton]->w(), buttons[state.pressedButton]->h(), buttons[state.pressedButton]->col);
-            state.pressedButton = -1;
+        if (pressedButton != NULL) {
+            pressedButton->draw(this);
+            pressedButton = NULL;
         }
     }
     
@@ -163,7 +160,7 @@ void SwitchUI::scanTouch(){
         if (!state.touchDown) touchRoutine(true);
         state.touchDown = true;
         lastDown = micros();
-        Serial.printf("touch %d, %d\n", x, y);
+        //Serial.printf("touch %d, %d\n", x, y);
         
         //ignore touches when we reactivate
         if (SleepTimer::global()->currentState() >= 2) {
@@ -174,16 +171,14 @@ void SwitchUI::scanTouch(){
         SleepTimer::global()->invalidate();      
 
         if (!state.blockUntilRelease){
-            int8_t nowButton = buttonAt(x, y);
-            if (state.pressedButton != nowButton){
-                if (state.pressedButton>=0) {
-                    tft.fillRect(buttons[state.pressedButton]->l, buttons[state.pressedButton]->t, buttons[state.pressedButton]->w(), buttons[state.pressedButton]->h(), buttons[state.pressedButton]->col);
+            const Button* nowButton = buttonAt(x, y);
+            if (pressedButton != nowButton){
+                if (pressedButton != NULL) pressedButton->draw(this);
+                if (nowButton != NULL) {
+                    nowButton->draw(this, TFT_YELLOW);
+                    this->pressRoutine(nowButton->id, nowButton->state);
                 }
-                if (nowButton>=0) {
-                    tft.fillRect(buttons[nowButton]->l, buttons[nowButton]->t, buttons[nowButton]->w(), buttons[nowButton]->h(), TFT_YELLOW);
-                    this->pressRoutine(buttons[nowButton]->id, buttons[nowButton]->state);
-                }
-                state.pressedButton = nowButton;           
+                pressedButton = nowButton;           
             }                
         }
         lastDown = micros();        

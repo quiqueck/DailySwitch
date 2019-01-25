@@ -18,7 +18,7 @@ class Button {
     public:
         inline int16_t w() const { return r-l;}
         inline int16_t h() const { return b-t;}
-        inline bool const inside(int8_t x, int8_t y){ return std::signbit((l-x) & (x-r) & (t-y) & (y-b));}
+        inline bool const inside(int16_t x, int16_t y){ return std::signbit((l-x) & (x-r) & (t-y) & (y-b));}
 
         inline void draw(class SwitchUI* ui) const {draw(ui, col);}
         void draw(class SwitchUI* ui, uint16_t oCol) const;
