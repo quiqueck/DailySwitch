@@ -47,7 +47,7 @@ void SleepTimer::setState(uint8_t s) {
         if (state >= 3){
             ui->displayOn();
         } 
-        if (state >= 2){
+        if (state >= 5){
             rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
             //timerSetDivider(timer, 240);
         } 
@@ -57,12 +57,12 @@ void SleepTimer::setState(uint8_t s) {
     } else if (s>=1 && state<1) {
         Serial.print("Reducing Brightness ");
         ui->setBrightness(0x10);
-    } else if (s>=2 && state<2) {
+    } else if (s>=3 && state<3) {
         Serial.print("Turn off Backlight ");
         ui->setBrightness(0x00);
         rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
         //timerSetDivider(timer, 80);
-    } else if (s>=3 && state<3) {
+    } else if (s>=5 && state<5) {
         Serial.print("Turn off Display ");
         ui->displayOff();
     } else if (s>=6*5 && state<6*5) {
