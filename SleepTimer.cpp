@@ -43,32 +43,35 @@ void SleepTimer::restart(){
 
 long lastStateChange = 0;
 void SleepTimer::setState(uint8_t s) {
+    const uint8_t reduceBrightnessAt = 3;
+    const uint8_t noBacklightAt = 6;
+    const uint8_t displayOffAt = 9;
     if (s==0){       
-        if (state >= 3){
+        if (state >= displayOffAt){
             ui->displayOn();
         } 
-        if (state >= 5){
+        if (state >= noBacklightAt){
             rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
             //timerSetDivider(timer, 240);
         } 
-        if (state >= 1) {
+        if (state >= reduceBrightnessAt) {
             ui->setBrightness(0xFF);
         }
-    } else if (s>=1 && state<1) {
+    } else if (s>=reduceBrightnessAt && state<reduceBrightnessAt) {
         Serial.print("Reducing Brightness ");
         ui->setBrightness(0x10);
-    } else if (s>=3 && state<3) {
+    } else if (s>=noBacklightAt && state<noBacklightAt) {
         Serial.print("Turn off Backlight ");
         ui->setBrightness(0x00);
         rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
         //timerSetDivider(timer, 80);
-    } else if (s>=5 && state<5) {
+    } else if (s>=displayOffAt && state<displayOffAt) {
         Serial.print("Turn off Display ");
         ui->displayOff();
     } else if (s>=6*5 && state<6*5) {
-        esp_sleep_enable_ext0_wakeup(GPIO_NUM_32, LOW);
+        /*esp_sleep_enable_ext0_wakeup(GPIO_NUM_32, LOW);
         Serial.println("Going to sleep now...");
-        esp_deep_sleep_start();
+        esp_deep_sleep_start();*/
     }
 
     Serial.printf("state: %d => %d (%d)\n", state, s, micros()-lastStateChange);    
