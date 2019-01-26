@@ -55,7 +55,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
     Serial.println("Initializing TFT...");
     
     tft.init();
-    tft.setRotation(0);
+    tft.setRotation(2);
 
     this->prepareTouchCalibration(force_calibration);
 
