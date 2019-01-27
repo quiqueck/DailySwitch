@@ -22,6 +22,9 @@ class SwitchUI{
 
         inline void addButton(class Button* b){ buttons.push_back(b); }
     protected:
+        void drawBmp(const char *filename);
+        void drawBmp(const char *filename, int16_t x, int16_t y, int16_t w, int16_t h);
+        void drawBmp(const char *filename, const class Button* bt);
         void prepareTouchCalibration(bool force_calibration=false);
         const class Button* buttonAt(uint16_t x, uint16_t y);
         void drawConnectionState();
@@ -36,6 +39,7 @@ class SwitchUI{
                 bool blockUntilRelease  : 1; 
                 bool touchDown          : 1; 
                 bool wasConnected       : 1;
+                bool dirty              : 1;
                 uint32_t reserved       : 29;                
             };
             uint32_t val;
