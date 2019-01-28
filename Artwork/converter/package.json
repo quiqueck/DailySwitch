@@ -1,0 +1,14 @@
+{
+  "name": "converter",
+  "version": "1.0.0",
+  "description": "Converts Image Data for a DailySwitch",
+  "main": "converting.js",
+  "scripts": {
+    "start": "node converting.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pngjs": "^3.3.3"
+  }
+}
