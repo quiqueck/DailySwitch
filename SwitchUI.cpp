@@ -4,7 +4,7 @@
 #include "DailyBluetoothSwitch.h"
 #include "SleepTimer.h"
 #include "Button.h"
-#include <soc/rtc.h>
+#include <SPIFFS.h>
 
 
 #define HG() 85
@@ -36,135 +36,103 @@ uint32_t read32(fs::File &f) {
 }
 
 void SwitchUI::drawBmp(const char *filename) {
-  fs::File bmpFS;
+    fs::File bmpFS;
 
-  // Open requested file on SD card
-  bmpFS = SPIFFS.open(filename, "r");
+    // Open requested file on SD card
+    bmpFS = SPIFFS.open(filename, "rb");
 
-  if (!bmpFS)
-  {
-    Serial.print("File not found");
-    return;
-  }
-
-  uint32_t seekOffset;
-  uint16_t w, h, row, col;
-  uint8_t  r, g, b;
-
-  uint32_t startTime = millis();
-  if (read16(bmpFS) == 0x4D42)
-  {
-    read32(bmpFS);
-    read32(bmpFS);
-    seekOffset = read32(bmpFS);
-    read32(bmpFS);
-    w = read32(bmpFS);
-    h = read32(bmpFS);
-
-    if ((read16(bmpFS) == 1) && (read16(bmpFS) == 24) && (read32(bmpFS) == 0))
+    if (!bmpFS)
     {
-      int16_t y = h - 1;
+        Serial.print("File not found");
+        return;
+    }
 
-      tft.setSwapBytes(true);
-      bmpFS.seek(seekOffset);
+    uint16_t w, h, row, col;
+    uint8_t  r, g, b;
+    uint32_t startTime = millis();
+    w = read16(bmpFS);
+    h = read16(bmpFS);
+    
+    uint16_t y = 0;
+    tft.setSwapBytes(false);  
 
-      uint16_t padding = (4 - ((w * 3) & 3)) & 3;
-      uint8_t lineBuffer[w * 3 + padding];
+    const uint16_t seekOffset = 4;    
+    const uint16_t eSz = sizeof(uint16_t);
+    bmpFS.seek(seekOffset);
+    uint16_t lineBuffer[w];
 
-      for (row = 0; row < h; row++) {
-        
-        bmpFS.read(lineBuffer, sizeof(lineBuffer));
-        uint8_t*  bptr = lineBuffer;
-        uint16_t* tptr = (uint16_t*)lineBuffer;
-        // Convert 24 to 16 bit colours
-        for (uint16_t col = 0; col < w; col++)
-        {
-          b = *bptr++;
-          g = *bptr++;
-          r = *bptr++;
-          *tptr++ = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-        }
+    for (row = 0; row < h; row++) {    
+        bmpFS.read((uint8_t*)lineBuffer, sizeof(lineBuffer));
 
         // Push the pixel row to screen, pushImage will crop the line if needed
         // y is decremented as the BMP image is drawn bottom up
-        tft.pushImage(0, y--, w, 1, (uint16_t*)lineBuffer);
-      }
-      Serial.print("Loaded in "); Serial.print(millis() - startTime);
-      Serial.println(" ms");
+        tft.pushImage(0, y++, w, 1, (uint16_t*)lineBuffer);
     }
-    else Serial.println("BMP format not recognized.");
-  }
-  bmpFS.close();
+    Serial.print("Loaded in "); Serial.print(millis() - startTime);
+    Serial.println(" ms");
+    
+    bmpFS.close();
 }
 
 void SwitchUI::drawBmp(const char *filename, const class Button* bt){
     drawBmp(filename, bt->l, bt->t, bt->w(), bt->h());
 }
 
+uint16_t* dataBuffer = NULL;
+
 void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, int16_t hg) {
 
-  if ((x >= tft.width()) || (y >= tft.height())) return;
+    if ((x >= tft.width()) || (y >= tft.height())) return;
 
-  fs::File bmpFS;
+    fs::File bmpFS;
 
-  // Open requested file on SD card
-  bmpFS = SPIFFS.open(filename, "r");
+    // Open requested file on SD card
+    bmpFS = SPIFFS.open(filename, "r");
 
-  if (!bmpFS)
-  {
-    Serial.print("File not found");
-    return;
-  }
-
-  uint32_t seekOffset;
-  uint16_t w, h, row, col;
-  uint8_t  r, g, b;
-
-  uint32_t startTime = millis();
-  if (read16(bmpFS) == 0x4D42)
-  {
-    read32(bmpFS);
-    read32(bmpFS);
-    seekOffset = read32(bmpFS);
-    read32(bmpFS);
-    w = read32(bmpFS);
-    h = read32(bmpFS);
-
-    if ((read16(bmpFS) == 1) && (read16(bmpFS) == 24) && (read32(bmpFS) == 0))
+    if (!bmpFS)
     {
-      tft.setSwapBytes(true);
-      bmpFS.seek(seekOffset);
-
-      uint16_t padding = (4 - ((w * 3) & 3)) & 3;
-      uint8_t lineBuffer[w * 3 + padding];
-      bmpFS.seek(seekOffset + (h-y-hg) * sizeof(lineBuffer) + x * 3);
-      y += hg - 1;
-
-      
-      for (row = 0; row < hg; row++) {
-        
-        bmpFS.read(lineBuffer, wd*3);
-        uint8_t*  bptr = lineBuffer;
-        uint16_t* tptr = (uint16_t*)lineBuffer;
-        // Convert 24 to 16 bit colours
-        for (uint16_t col = 0; col < wd; col++)
-        {
-          b = *bptr++;
-          g = *bptr++;
-          r = *bptr++;
-          *tptr++ = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-        }
-        bmpFS.seek((w-wd)*3 + padding, fs::SeekMode::SeekCur);
-        // Push the pixel row to screen, pushImage will crop the line if needed
-        // y is decremented as the BMP image is drawn bottom up
-        tft.pushImage(x, y--, wd, 1, (uint16_t*)lineBuffer);
-      }
-      Serial.print("Loaded in "); Serial.print(millis() - startTime);
-      Serial.println(" ms");
+        Serial.print("File not found");
+        return;
     }
-    else Serial.println("BMP format not recognized.");
-  }
-  bmpFS.close();
+
+    uint16_t w, h, row, col;
+    uint8_t  r, g, b;
+
+    uint32_t startTime = millis();
+    w = read16(bmpFS);
+    h = read16(bmpFS);
+
+    tft.setSwapBytes(false);    
+    const uint16_t seekOffset = 4;    
+    const uint16_t eSz = sizeof(uint16_t);
+    bmpFS.seek(seekOffset + y * (w*eSz) + x * eSz);    
+
+    if (wd*hg*2<80000) {
+        uint16_t* lineBuffer = (uint16_t*)malloc(eSz*wd*hg);
+        uint8_t* tptr = (uint8_t*)lineBuffer;
+        for (row = 0; row < hg; row++) {
+            bmpFS.read((uint8_t*)tptr, wd*eSz);
+            tptr += wd*eSz;
+            bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);            
+        }
+        tft.pushImage(x, y, wd, hg, (uint16_t*)lineBuffer);
+        free(lineBuffer);
+    } else {
+        uint16_t lineBuffer[wd];
+        
+        for (row = 0; row < hg; row++) {
+            bmpFS.read((uint8_t*)lineBuffer, wd*eSz);
+        
+            bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);
+            // Push the pixel row to screen, pushImage will crop the line if needed
+            // y is decremented as the BMP image is drawn bottom up
+            tft.pushImage(x, y++, wd, 1, (uint16_t*)lineBuffer);
+        }
+    }
+    Serial.print("Loaded in "); Serial.print(millis() - startTime);
+    Serial.println(" ms");
+    
+    bmpFS.close();
 }
 
 
@@ -178,6 +146,7 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine){
     state.wasConnected = false;
+    state.drewConnected = true;
     state.dirty = true;
     pressedButton = NULL;
     lastDown = micros();
@@ -272,20 +241,25 @@ void SwitchUI::drawConnectionState(){
     tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
     if (state.wasConnected) tft.println("verbunden");
     else tft.println("NICHT verbunden");
+
+    if (state.drewConnected != state.wasConnected){
+        state.drewConnected = state.wasConnected;
+        if (state.wasConnected == true)
+            drawBmp("/MM.istl", 0, 0, 320, 460);
+        else
+            drawBmp("/MMX.istl", 0, 0, 320, 460);
+        
+    }
 }
 
 void SwitchUI::redrawAll(){
     state.dirty = false;
     Serial.printf("Redraw all %d\n", buttons.size());
-    /*int32_t maxY = 0;
-    for (auto&& button : buttons) {
-        button->draw(this);
-        if (button->b > maxY) maxY = button->b;
-    }    
+    if (state.wasConnected == true)
+        drawBmp("/MM.istl");
+    else
+        drawBmp("/MMX.istl");
 
-    Serial.println("Fill Rest");
-    tft.fillRect(LEF(), maxY, RIG()-LEF(), 480-maxY, TFT_WHITE);*/
-    drawBmp("/MainMenu.bmp");
     drawConnectionState();    
 }
 
@@ -306,13 +280,17 @@ void SwitchUI::scanTouch(){
     if (delta<0) { lastDown = micros(); }
     
     //wait a bit before we send the touch-up event
-    if (delta > 200*1000) {
+    if (delta > 100*1000) {
         if (state.touchDown) touchRoutine(false);
         state.touchDown = false;
         state.blockUntilRelease = false;
 
         if (pressedButton != NULL) {
-            drawBmp("/MainMenu.bmp", pressedButton);
+            if (state.wasConnected == true) {
+                drawBmp("/MM.istl", pressedButton);
+            } else {
+                drawBmp("/MMX.istl", pressedButton);
+            }
             //pressedButton->draw(this);
             pressedButton = NULL;
         }
@@ -336,12 +314,21 @@ void SwitchUI::scanTouch(){
             const Button* nowButton = buttonAt(x, y);
             if (pressedButton != nowButton){
                 if (pressedButton != NULL) {
-                    drawBmp("/MainMenu.bmp", pressedButton);
+                    if (state.wasConnected == true) {
+                        drawBmp("/MM.istl", pressedButton);
+                    } else {
+                        drawBmp("/MMX.istl", pressedButton);
+                    }
                     //pressedButton->draw(this);
                 }
                 if (nowButton != NULL) {
                     state.dirty = true;
-                    nowButton->draw(this, TFT_YELLOW);
+                    if (state.wasConnected == true) {
+                        drawBmp("/MMD.istl", nowButton);
+                    } else {
+                        drawBmp("/MMX.istl", nowButton);
+                    }
+                    //nowButton->draw(this, TFT_YELLOW);
                     this->pressRoutine(nowButton->id, nowButton->state);
                 }
                 pressedButton = nowButton;           
