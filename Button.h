@@ -13,7 +13,18 @@ class Button {
         const uint16_t col;
         const uint8_t id;
         const DailyBluetoothSwitchServer::DBSNotificationStates state;
+        const DailyBluetoothSwitchServer::DBSNotificationStates altState;
         const char* name;
+
+    private:
+        union {
+            struct{
+                bool pressed         : 1; 
+                bool hasAlt          : 1; 
+                uint8_t reserved     : 6;                
+            };
+            uint8_t val;
+        } currentState;
 
     public:
         inline int16_t w() const { return r-l;}
@@ -22,10 +33,44 @@ class Button {
 
         inline void draw(class SwitchUI* ui) const {draw(ui, col);}
         void draw(class SwitchUI* ui, uint16_t oCol) const;
+        inline bool isPressed() const { return currentState.pressed; }
+        inline void toogle() {currentState.pressed = !currentState.pressed;}
+        inline void down() {currentState.pressed = true;}
+        inline void up() {currentState.pressed = false;}
+        inline bool hasAlternative() const { return currentState.hasAlt; }
+        inline DailyBluetoothSwitchServer::DBSNotificationStates  activeState() const { 
+            if (!currentState.hasAlt) return state;            
+            return currentState.pressed?altState:state; 
+        }
+
+        Button(
+            uint8_t id, 
+            DailyBluetoothSwitchServer::DBSNotificationStates state,  
+            const char* name, 
+            int16_t lIn, 
+            int16_t tIn, 
+            int16_t rIn, 
+            int16_t bIn, 
+            uint16_t colIn):
+                l(lIn),
+                r(rIn),
+                t(tIn),
+                b(bIn),
+                col(colIn), 
+                id(id), 
+                state(state),
+                altState(state),
+                name(name)
+        {
+            this->ui = ui;
+            currentState.hasAlt = false;
+            currentState.pressed = false;
+        }
 
         Button(
             uint8_t id, 
             DailyBluetoothSwitchServer::DBSNotificationStates state, 
+            DailyBluetoothSwitchServer::DBSNotificationStates altState,            
             const char* name, 
             int16_t lIn, 
             int16_t tIn, 
@@ -39,9 +84,12 @@ class Button {
                 col(colIn), 
                 id(id), 
                 state(state), 
+                altState(altState),
                 name(name)
         {
             this->ui = ui;
+            currentState.hasAlt = true;
+            currentState.pressed = false;
         }
     private:
         class SwitchUI* ui;

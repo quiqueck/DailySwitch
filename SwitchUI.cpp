@@ -43,7 +43,7 @@ void SwitchUI::drawBmp(const char *filename) {
 
     if (!bmpFS)
     {
-        Serial.print("File not found");
+        Serial.printf("File not found '%s'\n", filename);
         return;
     }
 
@@ -74,6 +74,18 @@ void SwitchUI::drawBmp(const char *filename) {
     bmpFS.close();
 }
 
+void SwitchUI::drawBmp(const class Button* bt){
+    if (state.wasConnected) {
+        if (bt->isPressed()){
+            drawBmp("/MMD.istl", bt->l, bt->t, bt->w(), bt->h());
+        } else {
+            drawBmp("/MM.istl", bt->l, bt->t, bt->w(), bt->h());
+        }
+    } else {
+        drawBmp("/MMX.istl", bt->l, bt->t, bt->w(), bt->h());
+    }
+}
+
 void SwitchUI::drawBmp(const char *filename, const class Button* bt){
     drawBmp(filename, bt->l, bt->t, bt->w(), bt->h());
 }
@@ -91,7 +103,7 @@ void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, i
 
     if (!bmpFS)
     {
-        Serial.print("File not found");
+        Serial.printf("File not found '%s'\n", filename);
         return;
     }
 
@@ -173,6 +185,9 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
         XP1(), TOP(2), XP2(), BOT(2), rgb(0, 0, 255)));
     this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
         XP2(), TOP(2), RIG(), BOT(2), rgb(0, 0, 150)));
+
+    this->addButton(new Button(4, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "",
+        XP2(), 380, RIG(), 380+79, rgb(0, 0, 150)));
         
     Serial.printf("Initialized Buttons %d\n", buttons.size());
     
@@ -263,8 +278,8 @@ void SwitchUI::redrawAll(){
     drawConnectionState();    
 }
 
-const Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
-    for (auto&& button : buttons) {
+Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
+    for (auto button : buttons) {
         if (button->inside(x, y)) return button;        
     } 
 
@@ -286,10 +301,13 @@ void SwitchUI::scanTouch(){
         state.blockUntilRelease = false;
 
         if (pressedButton != NULL) {
+            if (!pressedButton->hasAlternative()) {
+                pressedButton->up();
+            }
             if (state.wasConnected == true) {
-                drawBmp("/MM.istl", pressedButton);
+                drawBmp(pressedButton);
             } else {
-                drawBmp("/MMX.istl", pressedButton);
+                drawBmp(pressedButton);
             }
             //pressedButton->draw(this);
             pressedButton = NULL;
@@ -311,25 +329,33 @@ void SwitchUI::scanTouch(){
         SleepTimer::global()->invalidate();      
 
         if (!state.blockUntilRelease){
-            const Button* nowButton = buttonAt(x, y);
+            Button* nowButton = buttonAt(x, y);
             if (pressedButton != nowButton){
                 if (pressedButton != NULL) {
+                    if (!pressedButton->hasAlternative()) {
+                        pressedButton->up();
+                    }
                     if (state.wasConnected == true) {
-                        drawBmp("/MM.istl", pressedButton);
+                        drawBmp(pressedButton);
                     } else {
-                        drawBmp("/MMX.istl", pressedButton);
+                        drawBmp(pressedButton);
                     }
                     //pressedButton->draw(this);
                 }
                 if (nowButton != NULL) {
                     state.dirty = true;
-                    if (state.wasConnected == true) {
-                        drawBmp("/MMD.istl", nowButton);
+                    if (!nowButton->hasAlternative()) {
+                        nowButton->down();
                     } else {
-                        drawBmp("/MMX.istl", nowButton);
+                        nowButton->toogle();
+                    }
+                    if (state.wasConnected == true) {
+                        drawBmp(nowButton);
+                    } else {
+                        drawBmp(nowButton);
                     }
                     //nowButton->draw(this, TFT_YELLOW);
-                    this->pressRoutine(nowButton->id, nowButton->state);
+                    this->pressRoutine(nowButton->id, nowButton->activeState());
                 }
                 pressedButton = nowButton;           
             }                
