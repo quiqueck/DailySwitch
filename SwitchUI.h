@@ -3,6 +3,7 @@
 
 #include <TFT_eSPI.h>
 #include <functional>
+#include <cmath>
 #include "DailyBluetoothSwitch.h"
 
 #define TOUCH_BOX_SIZE 86
@@ -16,6 +17,8 @@ class SwitchUI{
         void redrawAll();
         void scanTouch();
         void connectionStateChanged(bool state);
+        void temperaturChanged(float tmp);
+        void humidityChanged(float tmp);
 
         inline void displayOff() { tft.writecommand(0x10); delay(6); }
         inline void displayOn() { tft.writecommand(0x11); delay(6); }
@@ -28,7 +31,10 @@ class SwitchUI{
         void drawBmp(const class Button* bt);
         void prepareTouchCalibration(bool force_calibration=false);
         class Button* buttonAt(uint16_t x, uint16_t y);
+
         void drawConnectionState();
+        void drawTemperatureState();
+        void drawHumidityState();
     public:
         TFT_eSPI tft;
     private:
@@ -47,6 +53,8 @@ class SwitchUI{
             uint32_t val;
         } state;
 
+        float temperature;
+        float humidity;
         class Button* pressedButton;
         std::vector<class Button*> buttons;        
         long lastDown;

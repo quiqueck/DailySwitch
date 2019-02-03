@@ -68,7 +68,7 @@ void SwitchUI::drawBmp(const char *filename) {
         // y is decremented as the BMP image is drawn bottom up
         tft.pushImage(0, y++, w, 1, (uint16_t*)lineBuffer);
     }
-    Serial.print("Loaded in "); Serial.print(millis() - startTime);
+    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
     Serial.println(" ms");
     
     bmpFS.close();
@@ -141,7 +141,7 @@ void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, i
             tft.pushImage(x, y++, wd, 1, (uint16_t*)lineBuffer);
         }
     }
-    Serial.print("Loaded in "); Serial.print(millis() - startTime);
+    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
     Serial.println(" ms");
     
     bmpFS.close();
@@ -157,6 +157,8 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
 }
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine){
+    temperature = NAN;
+    humidity = NAN;
     state.wasConnected = false;
     state.drewConnected = true;
     state.dirty = true;
@@ -245,14 +247,53 @@ void SwitchUI::setBrightness(uint8_t val){
     }
 }
 
+void SwitchUI::temperaturChanged(float tmp){
+    if (fabs(tmp-temperature) > 0.25f) {
+        temperature = tmp;
+        drawTemperatureState();
+    }    
+}
+void SwitchUI::drawTemperatureState(){
+    tft.loadFont("RobotoCondensed-Regular-48");
+    drawBmp("/MM.istl", 10, 20, 60, 32);
+    tft.setCursor(10, 20);
+    tft.setTextColor(TFT_BLACK);  tft.setTextSize(1);
+
+    if (isnan(temperature)){
+        tft.print(F("--°"));
+    } else {
+        tft.printf("%0.0f°", temperature);
+    }
+}
+
+void SwitchUI::humidityChanged(float hum){
+    if (fabs(humidity-humidity) >= 1.0f) {
+        humidity = hum;
+        drawHumidityState();
+    }
+}
+void SwitchUI::drawHumidityState(){
+    tft.loadFont("RobotoCondensed-Regular-48");
+    drawBmp("/MM.istl", 70, 20, 60, 32);
+    tft.setCursor(70, 20);
+    tft.setTextColor(TFT_BLACK);  tft.setTextSize(1);
+
+    if (isnan(humidity)){
+        tft.print(F("--"));
+    } else {
+        tft.printf("%0.0f \%", humidity);
+    }
+}
+
 void SwitchUI::connectionStateChanged(bool stateIn){
     state.wasConnected = stateIn;
     drawConnectionState();
 }
 
 void SwitchUI::drawConnectionState(){
+    tft.loadFont("RobotoCondensed-Regular-12");
     tft.fillRect(66, 461, 110, 20, TFT_BLACK);
-    tft.setCursor(66, 462, 2);
+    tft.setCursor(66, 463, 2);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
     if (state.wasConnected) tft.println("verbunden");
     else tft.println("NICHT verbunden");
@@ -290,9 +331,8 @@ Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
 
 void SwitchUI::scanTouch(){
     uint16_t x, y;
-    long delta = micros() - lastDown;
-    //timer wrapped around
-    if (delta<0) { lastDown = micros(); }
+    unsigned long delta = micros() - lastDown;
+    
     
     //wait a bit before we send the touch-up event
     if (delta > 100*1000) {

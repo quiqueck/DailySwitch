@@ -8,7 +8,7 @@ FileSystem* FileSystem::_global = NULL;
 FileSystem::FileSystem(){
     // check file system
     if (!SPIFFS.begin()) {
-        Serial.println("Formating File System");
+        Serial.println(F("Formating File System"));
 
         SPIFFS.format();
         SPIFFS.begin();
