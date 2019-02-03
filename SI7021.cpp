@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include "ESP32Setup.h"
 
-#define _TRANSACTION_TIMEOUT 10
+#define _TRANSACTION_TIMEOUT 200
 #define REQUEST_TMP_DELAY 6
 #define REQUEST_HUM_DELAY 8
 
@@ -73,8 +73,8 @@ bool SI7021::update(unsigned long ms_interval){
     const unsigned long now = millis();
     const unsigned long delta = now - last;
     if ((readState & 0xF0) == 0) { 
-        Serial.print(F("Environment Sensor Idle for"));
-        Serial.printf("%dms (interv:%dms)\n", delta, ms_interval);
+        //Serial.print(F("Environment Sensor Idle for "));
+        //Serial.printf("%dms (interv:%dms)\n", delta, ms_interval);
         if (delta > ms_interval) {
             readState = SI7021::ReadState::StartRequestTemp;                       
         }
@@ -97,7 +97,7 @@ bool SI7021::update(unsigned long ms_interval){
             if (Wire.requestFrom(addr, 2) == 2) { 
                 value.hi = Wire.read();
                 value.lo = Wire.read();
-                lastTemperature = value.v;
+                lastTemperature = calcTemperature(value.v);
 
                 readState = SI7021::ReadState::StartRequestHum;
                 return true;
@@ -115,14 +115,14 @@ bool SI7021::update(unsigned long ms_interval){
         if (delta > REQUEST_HUM_DELAY + _TRANSACTION_TIMEOUT) {  
             Serial.println(F("Failed to read Hum."));
             Serial.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY + _TRANSACTION_TIMEOUT);
-            readState = SI7021::ReadState::Waiting;            
+            readState = SI7021::ReadState::StartRequestTemp;            
         } else if (delta > REQUEST_HUM_DELAY) {  
             Serial.println(F("Try to read Hum."));  
             Serial.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY);                   
             if (Wire.requestFrom(addr, 2) == 2) { 
                 value.hi = Wire.read();
                 value.lo = Wire.read();
-                lastHumidity = value.v;
+                lastHumidity = calcHumidity(value.v);
 
                 readState = SI7021::ReadState::Waiting;
                 return true;

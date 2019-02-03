@@ -148,7 +148,7 @@ void loop()
     }
 
     #ifdef SI7021_DRIVER
-        if (envSensor.update()){
+        if (envSensor.update(10000)){
             ui->temperaturChanged(envSensor.temperature());
             ui->humidityChanged(envSensor.humidity());
         }

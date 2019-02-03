@@ -26,7 +26,7 @@ class SwitchUI{
         inline void addButton(class Button* b){ buttons.push_back(b); }
     protected:
         void drawBmp(const char *filename);
-        void drawBmp(const char *filename, int16_t x, int16_t y, int16_t w, int16_t h);
+        void drawBmp(const char *filename, int16_t x, int16_t y, int16_t w, int16_t h, bool toSprite=false);
         void drawBmp(const char *filename, const  class Button* bt);
         void drawBmp(const class Button* bt);
         void prepareTouchCalibration(bool force_calibration=false);
@@ -38,6 +38,7 @@ class SwitchUI{
     public:
         TFT_eSPI tft;
     private:
+        TFT_eSprite spr;
         const std::function<void(uint8_t, uint8_t)> pressRoutine;        
         const std::function<void(bool)> touchRoutine;        
 
