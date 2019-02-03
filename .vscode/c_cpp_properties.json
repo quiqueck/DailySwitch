@@ -9,6 +9,7 @@
                 "/Users/frank/Documents/Arduino/libraries/TFT_eSPI/**",
                 "/Users/frank/Documents/Arduino/libraries/TFT_eFEX/**",
                 "/Users/frank/Documents/Arduino/libraries/TFTShape/**",
+                "/Users/frank/Documents/Arduino/libraries/BH1750/**",
                 "${workspace}/**"
             ],
             "forcedInclude": [],
