@@ -12,8 +12,8 @@
 #include "DailyBluetoothSwitch.h"
 
 #ifdef SI7021_DRIVER
-#include "SI7021.h"
-SI7021 envSensor;
+    #include "SI7021.h"
+    SI7021 envSensor;
 #endif
 
 #ifdef MIC 
@@ -44,10 +44,10 @@ double vImag[samples];
 #endif 
 
 #ifdef BH1750_DRIVER
-#include <Wire.h>
-#include <BH1750.h>
+    #include <Wire.h>
+    #include <BH1750.h>
 
-BH1750 lightMeter;
+    BH1750 lightMeter;
 #endif
 
 TouchPin* t1 = NULL;
@@ -91,12 +91,12 @@ void setup()
 
     #ifdef BH1750_DRIVER
     
-    #ifndef SI7021_DRIVER
-    Serial.println(F("Init IC2"));
-    Wire.begin(IC2_DAT, IC2_CLK, IC2_FREQUENCY);
-    #endif
-    Serial.println(F("Light Sensor"));
-    lightMeter.begin();
+        #ifndef SI7021_DRIVER
+            Serial.println(F("Init IC2"));
+            Wire.begin(IC2_DAT, IC2_CLK, IC2_FREQUENCY);
+        #endif
+        Serial.println(F("Light Sensor"));
+        lightMeter.begin();
     #endif
 
     #ifdef MIC
@@ -135,20 +135,20 @@ void loop()
     ui->scanTouch();
     SleepTimer::global()->tick();
 
-    if (count >= 100){
+    if (count >= 25){
         count = 0;
     #ifdef BH1750_DRIVER        
-        long start = micros();
-        float lux = lightMeter.readLightLevel();
-        Serial.print("Light: ");
-        Serial.print(lux);
-        Serial.printf(" lx in %dms\n", (micros()-start)/1000);
+        //long start = micros();
+        const float lux = lightMeter.readLightLevel();
+        //Serial.print("Light: ");
+        //Serial.print(lux);
+        //Serial.printf(" lx in %dms\n", (micros()-start)/1000);
         ui->luxChanged(lux);
     #endif
     }
 
     #ifdef SI7021_DRIVER
-        if (envSensor.update(10000)){
+        if (envSensor.update()){
             ui->temperaturChanged(envSensor.temperature());
             ui->humidityChanged(envSensor.humidity());
         }

@@ -295,7 +295,7 @@ void SwitchUI::drawTemperatureState(){
 #ifdef BH1750_DRIVER
     spr.loadFont("RobotoCondensed-Regular-12");
     spr.setCursor(spr.getCursorX() + 10, 40); 
-    spr.print((String)((int)lux)+"lx");                
+    spr.print((String)((int)lux)+" lx");                
     spr.unloadFont();
 #endif
     
