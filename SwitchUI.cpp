@@ -4,6 +4,7 @@
 #include "DailyBluetoothSwitch.h"
 #include "SleepTimer.h"
 #include "Button.h"
+#include "ESP32Setup.h"
 #include <SPIFFS.h>
 
 
@@ -161,7 +162,7 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(TFT_eSprite(&tft)){
 
     spr.setColorDepth(16);
-    spr.createSprite(100, 70);
+    spr.createSprite(150, 70);
 
     temperature = NAN;
     humidity = NAN;
@@ -259,7 +260,7 @@ void SwitchUI::temperaturChanged(float tmp){
     if (
         (isnan(temperature) && !isnan(tmp)) ||
         (!isnan(temperature) && isnan(tmp)) ||
-        fabs(tmp-temperature) > -1 //0.25f
+        fabs(tmp-temperature) > 0.25f
        ) {
         temperature = tmp;
         drawTemperatureState();
@@ -269,6 +270,8 @@ void SwitchUI::drawTemperatureState(){
     spr.setColorDepth(16);
     spr.setSwapBytes(true);
     drawBmp("/MM.istl", 10, 00, spr.width(), spr.height(), true);
+
+#ifdef SI7021_DRIVER
     spr.loadFont("RobotoCondensed-Light-42");
     spr.setTextSize(1);
     spr.setCursor(0, 20);  
@@ -287,6 +290,14 @@ void SwitchUI::drawTemperatureState(){
         spr.print((String)((int)humidity)+"%");                
         spr.unloadFont();
     }
+#endif
+
+#ifdef BH1750_DRIVER
+    spr.loadFont("RobotoCondensed-Regular-12");
+    spr.setCursor(spr.getCursorX() + 10, 40); 
+    spr.print((String)((int)lux)+"lx");                
+    spr.unloadFont();
+#endif
     
 
     spr.pushSprite(10, 00);
@@ -298,27 +309,23 @@ void SwitchUI::humidityChanged(float hum){
     if (
         (isnan(humidity) && !isnan(hum)) ||
         (!isnan(humidity) && isnan(hum)) ||
-        fabs(hum-humidity) > -1//0.25f
+        fabs(hum-humidity) > 1.0f
        ){
         humidity = hum;
-        //drawHumidityState();
         drawTemperatureState();
     }
 }
-void SwitchUI::drawHumidityState(){
-    /*tft.loadFont("RobotoCondensed-Light-42");
-    drawBmp("/MM.istl", 70, 20, 60, 32);
-    tft.setTextSize(1);
-    tft.setTextDatum(TL_DATUM);
-    tft.setCursor(70, 20, 2);    
-    tft.setTextColor(TFT_BLACK);  
 
-    if (isnan(humidity)){
-        tft.print(F("--"));
-    } else {
-        tft.printf("%0.0f \%", humidity);
+void SwitchUI::luxChanged(float l){
+    Serial.printf("Update Lux %f => %f (%f)\n", lux, l, fabs(lux-l));
+    if (
+        (isnan(lux) && !isnan(l)) ||
+        (!isnan(lux) && isnan(l)) ||
+        fabs(l-lux) > 10.0f
+       ){
+        lux = l;
+        drawTemperatureState();
     }
-    tft.unloadFont();*/
 }
 
 void SwitchUI::connectionStateChanged(bool stateIn){
@@ -354,8 +361,7 @@ void SwitchUI::redrawAll(){
 
     Serial.printf("Redraw state\n", buttons.size());
     drawConnectionState(); 
-    drawTemperatureState();
-    drawHumidityState();   
+    drawTemperatureState(); 
 }
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){

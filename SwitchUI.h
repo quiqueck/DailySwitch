@@ -18,7 +18,8 @@ class SwitchUI{
         void scanTouch();
         void connectionStateChanged(bool state);
         void temperaturChanged(float tmp);
-        void humidityChanged(float tmp);
+        void humidityChanged(float hum);
+        void luxChanged(float l);
 
         inline void displayOff() { tft.writecommand(0x10); delay(6); }
         inline void displayOn() { tft.writecommand(0x11); delay(6); }
@@ -34,7 +35,6 @@ class SwitchUI{
 
         void drawConnectionState();
         void drawTemperatureState();
-        void drawHumidityState();
     public:
         TFT_eSPI tft;
     private:
@@ -56,6 +56,7 @@ class SwitchUI{
 
         float temperature;
         float humidity;
+        float lux;
         class Button* pressedButton;
         std::vector<class Button*> buttons;        
         long lastDown;

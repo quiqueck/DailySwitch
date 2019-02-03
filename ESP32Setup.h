@@ -2,7 +2,8 @@
 
 #include <analogWrite.h>
 
-#define SI7021_DRIVER
+#define SI7021_DRIVER  //Temperature/Humidity
+#define BH1750_DRIVER  //LightMeter
 
 //#define RPI_ILI9486_DRIVER // 20MHz maximum SPI
 #define ILI9486_DRIVER

@@ -1,4 +1,3 @@
-#define LUX // enable light sensor
 //#define MIC //enable microfone
 
 
@@ -44,7 +43,7 @@ double vImag[samples];
 #define SCL_PLOT 0x03
 #endif 
 
-#ifdef LUX
+#ifdef BH1750_DRIVER
 #include <Wire.h>
 #include <BH1750.h>
 
@@ -90,7 +89,7 @@ void setup()
     }
     #endif
 
-    #ifdef LUX
+    #ifdef BH1750_DRIVER
     
     #ifndef SI7021_DRIVER
     Serial.println(F("Init IC2"));
@@ -116,7 +115,7 @@ void stateChanged(bool state){
 
 void loop()
 {
-    static int count = 0;
+    static int count = 1000;
     count++;
     if (!triggerStateUpdate) {
         triggerStateUpdate = true;
@@ -138,12 +137,13 @@ void loop()
 
     if (count >= 100){
         count = 0;
-    #ifdef LUX        
+    #ifdef BH1750_DRIVER        
         long start = micros();
         float lux = lightMeter.readLightLevel();
         Serial.print("Light: ");
         Serial.print(lux);
         Serial.printf(" lx in %dms\n", (micros()-start)/1000);
+        ui->luxChanged(lux);
     #endif
     }
 
