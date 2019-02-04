@@ -76,7 +76,7 @@ void SleepTimer::setState(uint8_t s) {
         esp_deep_sleep_start();*/
     }
 
-    Serial.printf("state: %d => %d (%dms)\n", state, s, millis()-lastStateChange);    
+    //Serial.printf("state: %d => %d (%dms)\n", state, s, millis()-lastStateChange);    
     lastStateChange = millis();
     state = s;
 }

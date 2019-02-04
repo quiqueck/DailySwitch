@@ -198,7 +198,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
     this->addButton(new Button(4, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "",
         XP2(), 380, RIG(), 380+79, rgb(0, 0, 150)));
         
-    Serial.printf("Initialized Buttons %d\n", buttons.size());
+    //Serial.printf("Initialized Buttons %d\n", buttons.size());
     
     Serial.println("Initializing TFT...");
     
@@ -255,7 +255,7 @@ void SwitchUI::setBrightness(uint8_t val){
 }
 
 void SwitchUI::temperaturChanged(float tmp){
-    Serial.printf("Update Temperature %f => %f (%f)\n", temperature, tmp, fabs(temperature-tmp));
+    //Serial.printf("Update Temperature %f => %f (%f)\n", temperature, tmp, fabs(temperature-tmp));
 
     if (
         (isnan(temperature) && !isnan(tmp)) ||
@@ -304,7 +304,7 @@ void SwitchUI::drawTemperatureState(){
 }
 
 void SwitchUI::internalTemperatureChanged(float tmp){
-    Serial.printf("Update internal Temperature %f => %f (%f)\n", temperatureIntern, tmp, fabs(temperatureIntern-tmp));
+    //Serial.printf("Update internal Temperature %f => %f (%f)\n", temperatureIntern, tmp, fabs(temperatureIntern-tmp));
 
     if (
         (isnan(temperatureIntern) && !isnan(tmp)) ||
@@ -317,7 +317,7 @@ void SwitchUI::internalTemperatureChanged(float tmp){
 }
 
 void SwitchUI::humidityChanged(float hum){
-    Serial.printf("Update Humidity %f => %f (%f)\n", humidity, hum, fabs(humidity-hum));
+    //Serial.printf("Update Humidity %f => %f (%f)\n", humidity, hum, fabs(humidity-hum));
     if (
         (isnan(humidity) && !isnan(hum)) ||
         (!isnan(humidity) && isnan(hum)) ||
@@ -329,7 +329,7 @@ void SwitchUI::humidityChanged(float hum){
 }
 
 void SwitchUI::luxChanged(float l){
-    Serial.printf("Update Lux %f => %f (%f)\n", lux, l, fabs(lux-l));
+    //Serial.printf("Update Lux %f => %f (%f)\n", lux, l, fabs(lux-l));
     if (
         (isnan(lux) && !isnan(l)) ||
         (!isnan(lux) && isnan(l)) ||
@@ -388,7 +388,7 @@ void SwitchUI::redrawAll(){
     else
         drawBmp("/MMX.istl");
 
-    Serial.printf("Redraw state\n", buttons.size());
+    //Serial.printf("Redraw state\n", buttons.size());
     drawConnectionState(); 
     drawInternalState();
     drawTemperatureState(); 

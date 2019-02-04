@@ -42,7 +42,7 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
 }
 
 void DailyBluetoothSwitchServer::startAdvertising() {
-    Serial.printf("Started Advertising...");
+    Serial.println("Started Advertising...");
     BLEDevice::startAdvertising();
 }
 
