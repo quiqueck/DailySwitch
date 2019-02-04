@@ -20,7 +20,7 @@ class SI7021 {
 
     public:
         //read periodically 
-        bool update(unsigned long ms_interval = 1000 * 60 * 5);
+        bool update(unsigned long ms_interval = 1000 * 30 * 1);
 
         inline bool const hasValidTemperature() { return !isnan(SI7021::lastTemperature); }
         inline bool const hasValidHumidity() { return !isnan(SI7021::lastHumidity); }
