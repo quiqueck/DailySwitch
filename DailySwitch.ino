@@ -11,6 +11,15 @@
 
 #include "DailyBluetoothSwitch.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint8_t temprature_sens_read();
+#ifdef __cplusplus
+}
+#endif
+uint8_t temprature_sens_read();
+
 #ifdef SI7021_DRIVER
     #include "SI7021.h"
     SI7021 envSensor;
@@ -137,6 +146,7 @@ void loop()
 
     if (count >= 25){
         count = 0;
+        ui->internalTemperatureChanged((temprature_sens_read() - 32) / 1.8);
     #ifdef BH1750_DRIVER        
         //long start = micros();
         const float lux = lightMeter.readLightLevel();

@@ -260,7 +260,7 @@ void SwitchUI::temperaturChanged(float tmp){
     if (
         (isnan(temperature) && !isnan(tmp)) ||
         (!isnan(temperature) && isnan(tmp)) ||
-        fabs(tmp-temperature) > 0.25f
+        fabs(tmp-temperature) > 1.0f
        ) {
         temperature = tmp;
         drawTemperatureState();
@@ -285,23 +285,35 @@ void SwitchUI::drawTemperatureState(){
     spr.unloadFont();
     
     if (!isnan(humidity)){
-        spr.setCursor(spr.getCursorX() - 10, 40); 
-        spr.loadFont("RobotoCondensed-Regular-12");
+        spr.setCursor(spr.getCursorX() - 10, 37); 
+        spr.loadFont("RobotoCondensed-Light-18");
         spr.print((String)((int)humidity)+"%");                
         spr.unloadFont();
     }
 #endif
 
-#ifdef BH1750_DRIVER
-    spr.loadFont("RobotoCondensed-Regular-12");
-    spr.setCursor(spr.getCursorX() + 10, 40); 
+/*#ifdef BH1750_DRIVER
+    spr.loadFont("RobotoCondensed-Light-18");
+    spr.setCursor(spr.getCursorX() + 10, 37); 
     spr.print((String)((int)lux)+" lx");                
     spr.unloadFont();
-#endif
-    
+#endif*/
 
     spr.pushSprite(10, 00);
     
+}
+
+void SwitchUI::internalTemperatureChanged(float tmp){
+    Serial.printf("Update internal Temperature %f => %f (%f)\n", temperatureIntern, tmp, fabs(temperatureIntern-tmp));
+
+    if (
+        (isnan(temperatureIntern) && !isnan(tmp)) ||
+        (!isnan(temperatureIntern) && isnan(tmp)) ||
+        fabs(tmp-temperatureIntern) > 1.0f
+       ) {
+        temperatureIntern = tmp;
+        drawConnectionState();
+    }    
 }
 
 void SwitchUI::humidityChanged(float hum){
@@ -324,7 +336,7 @@ void SwitchUI::luxChanged(float l){
         fabs(l-lux) > 10.0f
        ){
         lux = l;
-        drawTemperatureState();
+        drawConnectionState();
     }
 }
 
@@ -335,11 +347,22 @@ void SwitchUI::connectionStateChanged(bool stateIn){
 
 void SwitchUI::drawConnectionState(){
     tft.loadFont("RobotoCondensed-Regular-12");
-    tft.fillRect(66, 461, 110, 20, TFT_BLACK);
+    tft.fillRect(66, 461, 320-66-10, 20, TFT_BLACK);
+    tft.setTextDatum(TL_DATUM);
     tft.setCursor(66, 463, 2);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
-    if (state.wasConnected) tft.println("verbunden");
-    else tft.println("NICHT verbunden");
+    if (state.wasConnected) tft.println(F("verbunden"));
+    else tft.println(F("NICHT verbunden"));
+
+    tft.unloadFont();
+    tft.loadFont("RobotoCondensed-Light-12");
+    tft.setTextDatum(TR_DATUM);
+    tft.setCursor(310, 463, 2);
+#ifdef BH1750_DRIVER
+    tft.drawString((String)((int)lux)+" lx   " + (String)((int)temperatureIntern)+"°", 310, 464);                    
+#else
+    tft.drawString((String)((int)temperatureIntern)+"°", 310, 463); 
+#endif
     tft.unloadFont();
 
     if (state.drewConnected != state.wasConnected){

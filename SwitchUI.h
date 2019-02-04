@@ -18,6 +18,7 @@ class SwitchUI{
         void scanTouch();
         void connectionStateChanged(bool state);
         void temperaturChanged(float tmp);
+        void internalTemperatureChanged(float tmp);
         void humidityChanged(float hum);
         void luxChanged(float l);
 
@@ -55,6 +56,7 @@ class SwitchUI{
         } state;
 
         float temperature;
+        float temperatureIntern;
         float humidity;
         float lux;
         class Button* pressedButton;
