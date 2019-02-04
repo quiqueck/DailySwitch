@@ -436,7 +436,7 @@ void SwitchUI::scanTouch(){
         //Serial.printf("touch %d, %d\n", x, y);
         
         //ignore touches when we reactivate
-        if (SleepTimer::global()->currentState() >= 6) {
+        if (SleepTimer::global()->noBacklight()) {
             state.blockUntilRelease = true;
             SleepTimer::global()->invalidate();                     
             return;

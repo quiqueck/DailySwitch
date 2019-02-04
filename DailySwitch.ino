@@ -124,7 +124,7 @@ void stateChanged(bool state){
 
 void loop()
 {
-    static int count = 1000;
+    static uint32_t count = 1000;
     count++;
     if (!triggerStateUpdate) {
         triggerStateUpdate = true;
@@ -144,25 +144,27 @@ void loop()
     ui->scanTouch();
     SleepTimer::global()->tick();
 
-    if (count >= 25){
-        count = 0;
-        ui->internalTemperatureChanged((temprature_sens_read() - 32) / 1.8);
-    #ifdef BH1750_DRIVER        
-        //long start = micros();
-        const float lux = lightMeter.readLightLevel();
-        //Serial.print("Light: ");
-        //Serial.print(lux);
-        //Serial.printf(" lx in %dms\n", (micros()-start)/1000);
-        ui->luxChanged(lux);
-    #endif
-    }
-
-    #ifdef SI7021_DRIVER
-        if (envSensor.update()){
-            ui->temperaturChanged(envSensor.temperature());
-            ui->humidityChanged(envSensor.humidity());
+    if (!SleepTimer::global()->noBacklight()) {
+        if (count >= 25){
+            count = 0;
+            ui->internalTemperatureChanged((temprature_sens_read() - 32) / 1.8);
+        #ifdef BH1750_DRIVER        
+            //long start = micros();
+            const float lux = lightMeter.readLightLevel();
+            //Serial.print("Light: ");
+            //Serial.print(lux);
+            //Serial.printf(" lx in %dms\n", (micros()-start)/1000);
+            ui->luxChanged(lux);
+        #endif
         }
-    #endif
+
+        #ifdef SI7021_DRIVER
+            if (envSensor.update()){
+                ui->temperaturChanged(envSensor.temperature());
+                ui->humidityChanged(envSensor.humidity());
+            }
+        #endif
+    }
 
     #ifdef MIC
     /*SAMPLING*/

@@ -41,11 +41,13 @@ void SleepTimer::restart(){
     timerRestart(timer);
 }
 
+const uint8_t SleepTimer::reduceBrightnessAt = 3;
+const uint8_t SleepTimer::noBacklightAt = 6;
+const uint8_t SleepTimer::displayOffAt = 9;
+
 unsigned long lastStateChange = 0;
 void SleepTimer::setState(uint8_t s) {
-    const uint8_t reduceBrightnessAt = 3;
-    const uint8_t noBacklightAt = 6;
-    const uint8_t displayOffAt = 9;
+    
     if (s==0){       
         if (state >= displayOffAt){
             ui->displayOn();

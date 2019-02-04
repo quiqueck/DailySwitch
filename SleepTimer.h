@@ -12,12 +12,19 @@ class SleepTimer {
         static inline SleepTimer* global() { return SleepTimer::_global; }
         inline void invalidate() { if (state!=0) setState(0); }
         inline const uint8_t currentState() { return this->state; }
+        inline const bool reduceBrightness() { return this->state>=reduceBrightnessAt; }
+        inline const bool noBacklight() { return this->state>=noBacklightAt; }
+        inline const bool displayOff() { return this->state>=displayOffAt; }
         void tick();
         void restart();
         void stop();
         void start();
 
     private:
+        static const uint8_t reduceBrightnessAt;
+        static const uint8_t noBacklightAt;
+        static const uint8_t displayOffAt;
+
         SleepTimer(class SwitchUI* uiIn);
         void setState(uint8_t s);
 
