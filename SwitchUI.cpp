@@ -312,7 +312,7 @@ void SwitchUI::internalTemperatureChanged(float tmp){
         fabs(tmp-temperatureIntern) > 1.0f
        ) {
         temperatureIntern = tmp;
-        drawConnectionState();
+        drawInternalState();
     }    
 }
 
@@ -336,7 +336,7 @@ void SwitchUI::luxChanged(float l){
         fabs(l-lux) > 10.0f
        ){
         lux = l;
-        drawConnectionState();
+        drawInternalState();
     }
 }
 
@@ -345,16 +345,10 @@ void SwitchUI::connectionStateChanged(bool stateIn){
     drawConnectionState();
 }
 
-void SwitchUI::drawConnectionState(){
-    tft.loadFont("RobotoCondensed-Regular-12");
-    tft.fillRect(66, 461, 320-66-10, 20, TFT_BLACK);
-    tft.setTextDatum(TL_DATUM);
-    tft.setCursor(66, 463, 2);
+void SwitchUI::drawInternalState(){
+    tft.fillRect(150, 461, 140, 20, TFT_BLACK);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
-    if (state.wasConnected) tft.println(F("verbunden"));
-    else tft.println(F("NICHT verbunden"));
 
-    tft.unloadFont();
     tft.loadFont("RobotoCondensed-Light-12");
     tft.setTextDatum(TR_DATUM);
     tft.setCursor(310, 463, 2);
@@ -363,6 +357,18 @@ void SwitchUI::drawConnectionState(){
 #else
     tft.drawString((String)((int)temperatureIntern)+"°", 310, 463); 
 #endif
+    tft.unloadFont();
+}
+
+void SwitchUI::drawConnectionState(){
+    tft.loadFont("RobotoCondensed-Regular-12");
+    tft.fillRect(66, 461, 110, 20, TFT_BLACK);
+    tft.setTextDatum(TL_DATUM);
+    tft.setCursor(66, 463, 2);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
+    if (state.wasConnected) tft.println(F("verbunden"));
+    else tft.println(F("NICHT verbunden"));
+
     tft.unloadFont();
 
     if (state.drewConnected != state.wasConnected){
@@ -384,6 +390,7 @@ void SwitchUI::redrawAll(){
 
     Serial.printf("Redraw state\n", buttons.size());
     drawConnectionState(); 
+    drawInternalState();
     drawTemperatureState(); 
 }
 

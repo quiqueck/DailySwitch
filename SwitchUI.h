@@ -35,6 +35,7 @@ class SwitchUI{
         class Button* buttonAt(uint16_t x, uint16_t y);
 
         void drawConnectionState();
+        void drawInternalState();
         void drawTemperatureState();
     public:
         TFT_eSPI tft;
