@@ -1,5 +1,7 @@
 //#define MIC //enable microfone
-
+#pragma GCC optimize ("-Os")
+#pragma GCC debug ("-g0")
+#pragma GCC push_options
 
 #include <Arduino.h>
 #include <FunctionalInterrupt.h>
@@ -259,3 +261,5 @@ void forceCalib(uint8_t pin, bool pressed){
         triggerCalibration = true;        
     }
 }
+
+#pragma GCC pop_options
