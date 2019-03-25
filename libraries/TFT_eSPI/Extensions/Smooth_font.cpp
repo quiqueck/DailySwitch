@@ -355,6 +355,7 @@ uint16_t TFT_eSPI::alphaBlend(uint8_t alpha, uint16_t fgc, uint16_t bgc)
   // Combine RGB565 colours into 16 bits
   //return ((r&0x18) << 11) | ((g&0x30) << 5) | ((b&0x18) << 0); // 2 bit greyscale
   //return ((r&0x1E) << 11) | ((g&0x3C) << 5) | ((b&0x1E) << 0); // 4 bit greyscale
+  //return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
   return (r << 11) | (g << 5) | (b << 0);
 }
 

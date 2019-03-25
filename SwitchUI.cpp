@@ -5,6 +5,7 @@
 #include "SleepTimer.h"
 #include "Button.h"
 #include "ESP32Setup.h"
+#include "Sprite.h"
 #include <SD.h>
 
 
@@ -116,7 +117,7 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
     const uint16_t eSz = sizeof(uint16_t);
     bmpFS.seek(seekOffset + y * (w*eSz) + x * eSz);    
 
-    if (wd*hg*2<80000) {
+    if (wd*hg*eSz<60000) {
         uint16_t* lineBuffer = (uint16_t*)malloc(eSz*wd*hg);
         uint8_t* tptr = (uint8_t*)lineBuffer;
         for (row = 0; row < hg; row++) {
@@ -146,10 +147,60 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
     bmpFS.close();
 }
 
-struct AlphaCol{
-    uint16_t col;
-    uint8_t alpha;
-};
+
+void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, int16_t offX, int16_t offY) {
+    if ((x >= tft.width()) || (y >= tft.height())) return;
+
+    fs::File bmpFS;
+    // Open requested file on SD card
+    bmpFS = SD.open(filename.c_str(), "r");
+
+    if (!bmpFS)
+    {
+        Serial.printf("File not found '%s'\n", filename.c_str());
+        return;
+    }
+
+    uint16_t w, h, row, col;
+    uint8_t  r, g, b;
+
+    uint32_t startTime = millis();
+    w = read16(bmpFS);
+    h = read16(bmpFS);
+
+    tft.setSwapBytes(false);    
+    const uint16_t seekOffset = 4;    
+    const uint16_t eSz = sizeof(AlphaCol);
+    bmpFS.seek(seekOffset + y * (w*eSz) + x * eSz);    
+
+    if (wd*hg*eSz<60000) {
+        AlphaCol* lineBuffer = (AlphaCol*)malloc(eSz*wd*hg);
+        uint8_t* tptr = (uint8_t*)lineBuffer;
+        for (row = 0; row < hg; row++) {
+            bmpFS.read((uint8_t*)tptr, wd*eSz);
+            tptr += wd*eSz;
+            bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);            
+        }   
+        spr.pushImageAlpha(offX, offY, wd, hg, (AlphaCol*)lineBuffer);             
+        free(lineBuffer);
+    } else {
+        AlphaCol lineBuffer[wd];
+        for (row = 0; row < hg; row++) {
+            bmpFS.read((uint8_t*)lineBuffer, wd*eSz);
+            bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);
+            // Push the pixel row to screen, pushImage will crop the line if needed
+            // y is decremented as the BMP image is drawn bottom up
+            spr.pushImageAlpha(offX, row + offY, wd, 1, (AlphaCol*)lineBuffer);
+        }
+    }
+    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
+    Serial.println(" ms");
+    
+    bmpFS.close();
+}
+
+
+
 
 inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
     return (((31*(r+4))/255)<<11) | 
@@ -247,13 +298,13 @@ void SwitchUI::ReadDefinitions(const char *filename) {
     defFS.close();
 }
 
-SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(TFT_eSprite(&tft)){
+SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(mySprite(&tft)){
     spr.setColorDepth(16);
     spr.createSprite(98, 184);
 
     temperature = NAN;
     humidity = NAN;
-    currentPage = 0;
+    currentPage = 1;
     state.wasConnected = false;
     state.drewConnected = true;
     state.dirty = true;
@@ -343,7 +394,7 @@ void SwitchUI::temperaturChanged(float tmp){
 void SwitchUI::drawTemperatureState(){
     spr.setColorDepth(16);
     spr.setSwapBytes(true);
-    drawBmp(pageDefName(), 406, 00, spr.width(), spr.height(), true);
+    drawBmp(pageDefName(), 406, 00, 480-406, 320, true);
 
 #ifdef SI7021_DRIVER
     spr.loadFont("RobotoCondensed-Light-42");
@@ -455,7 +506,7 @@ void SwitchUI::drawConnectionState(){
             f = pageDefName();            
         else
             f = pageDisName();
-        drawBmp(f, 0, 0, 406, 223);
+        drawBmp(f, 0, 0, 406, 320);
     }
 }
 
@@ -487,6 +538,12 @@ void SwitchUI::handleButtonPress(const Button* btn){
     if (btn->type() == ButtonType::PAGE){
         currentPage = btn->id;
         redrawAll();
+    } else if (btn->type() == ButtonType::SELECT){
+        Serial.println("Draw Alpha");
+        drawBmp(pageDefName(), (480-98)/2, (320-184)/2, 98, 184, true);
+        drawBmpAlpha("/LL.IST", 0, 0, 98, 184, 0, 0);
+        spr.pushSprite((480-98)/2, (320-184)/2);
+        Serial.println("Done Alpha");
     } else {
         this->pressRoutine(btn->id, btn->activeState());
     }

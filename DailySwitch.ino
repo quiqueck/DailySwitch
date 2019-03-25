@@ -3,12 +3,12 @@
 #pragma GCC debug ("-g0")
 #pragma GCC push_options
 
+#include "ESP32Setup.h"
 #include <Arduino.h>
 #include <FunctionalInterrupt.h>
 #include <pins_arduino.h>
 #include <SPI.h>
 #include <SD.h>
-#include "ESP32Setup.h"
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
@@ -83,9 +83,10 @@ void setup()
     //digitalWrite(SDCARD_CS, HIGH);
 
     FileSystem::init();
-    if (!SD.begin(SDCARD_CS)){
+    if (!SD.begin(SDCARD_CS, SPI, SPI_FREQUENCY*2)){
         Serial.println("SD-Card Initialization failed.");
     }
+    
     Serial.printf("SD-Info: %dMB/%dMB \n", SD.usedBytes()/(1024*1024), SD.totalBytes()/(1024*1024));
 
     ui = new SwitchUI(buttonEvent, touchPanelEvent, false);

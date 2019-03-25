@@ -5,12 +5,10 @@
             "includePath": [
                 "/Users/frank/Documents/Arduino/hardware/espressif/esp32/**",
                 "/Users/frank/Documents/Arduino/hardware/espressif/esp32/libraries/**",
-                "/Users/frank/Documents/Arduino/libraries/ESP32_AnalogWrite-master/**",
-                "/Users/frank/Documents/Arduino/libraries/TFT_eSPI/**",
-                "/Users/frank/Documents/Arduino/libraries/TFT_eFEX/**",
-                "/Users/frank/Documents/Arduino/libraries/TFTShape/**",
-                "/Users/frank/Documents/Arduino/libraries/BH1750/**",
-                "${workspace}/**"
+                "${workspaceFolder}/libraries/ESP32_AnalogWrite-master/**",
+                "${workspaceFolder}/libraries/TFT_eSPI/**",
+                "${workspaceFolder}/libraries/BH1750/**",
+                "${workspaceFolder}/**"
             ],
             "forcedInclude": [],
             "macFrameworkPath": [

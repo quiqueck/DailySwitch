@@ -55,6 +55,7 @@
         "string_view": "cpp",
         "system_error": "cpp",
         "tuple": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "glcdfont.c": "cpp"
     }
 }
