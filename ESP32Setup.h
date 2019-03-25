@@ -2,8 +2,9 @@
 
 #include <analogWrite.h>
 
-#define SI7021_DRIVER  //Temperature/Humidity
-#define BH1750_DRIVER  //LightMeter
+//#define HEADLESS
+//#define SI7021_DRIVER  //Temperature/Humidity
+//#define BH1750_DRIVER  //LightMeter
 
 //#define RPI_ILI9486_DRIVER // 20MHz maximum SPI
 #define ILI9486_DRIVER
@@ -24,6 +25,8 @@
 
 #define IC2_CLK GPIO_NUM_14
 #define IC2_DAT GPIO_NUM_26
+
+#define LED GPIO_NUM_2
 
 #define AUDIO_PIN GPIO_NUM_34
 

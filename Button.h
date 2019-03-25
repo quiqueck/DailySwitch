@@ -4,6 +4,8 @@
 #include <cmath>
 #include "DailyBluetoothSwitch.h"
 
+enum ButtonType :uint8_t {SWITCH=0, PAGE=1, SELECT=2};
+
 class Button {
     public:        
         const int16_t l;
@@ -21,12 +23,16 @@ class Button {
             struct{
                 bool pressed         : 1; 
                 bool hasAlt          : 1; 
-                uint8_t reserved     : 6;                
+                ButtonType type      : 2;
+                uint8_t page         : 2;
+                uint8_t reserved     : 2;                
             };
             uint8_t val;
         } currentState;
 
     public:
+        inline uint8_t page() const { return currentState.page;}
+        inline ButtonType type() const { return currentState.type;}
         inline int16_t w() const { return r-l;}
         inline int16_t h() const { return b-t;}
         inline bool const inside(int16_t x, int16_t y){ return std::signbit((l-x) & (x-r) & (t-y) & (y-b));}
@@ -51,7 +57,9 @@ class Button {
             int16_t tIn, 
             int16_t rIn, 
             int16_t bIn, 
-            uint16_t colIn):
+            uint16_t colIn,
+            uint8_t page=0,
+            ButtonType type=ButtonType::SWITCH):
                 l(lIn),
                 r(rIn),
                 t(tIn),
@@ -65,6 +73,8 @@ class Button {
             this->ui = ui;
             currentState.hasAlt = false;
             currentState.pressed = false;
+            currentState.type = type;
+            currentState.page = page;
         }
 
         Button(
@@ -76,7 +86,9 @@ class Button {
             int16_t tIn, 
             int16_t rIn, 
             int16_t bIn, 
-            uint16_t colIn):
+            uint16_t colIn,
+            uint8_t page=0,
+            ButtonType type=ButtonType::SWITCH):
                 l(lIn),
                 r(rIn),
                 t(tIn),
@@ -90,6 +102,8 @@ class Button {
             this->ui = ui;
             currentState.hasAlt = true;
             currentState.pressed = false;
+            currentState.type = type;
+            currentState.page = page;
         }
     private:
         class SwitchUI* ui;

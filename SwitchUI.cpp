@@ -5,7 +5,7 @@
 #include "SleepTimer.h"
 #include "Button.h"
 #include "ESP32Setup.h"
-#include <SPIFFS.h>
+#include <SD.h>
 
 
 #define HG() 85
@@ -36,15 +36,15 @@ uint32_t read32(fs::File &f) {
   return result;
 }
 
-void SwitchUI::drawBmp(const char *filename) {
+void SwitchUI::drawBmp(std::string filename) {
     fs::File bmpFS;
 
     // Open requested file on SD card
-    bmpFS = SPIFFS.open(filename, "rb");
+    bmpFS = SD.open(filename.c_str(), "rb");
 
     if (!bmpFS)
     {
-        Serial.printf("File not found '%s'\n", filename);
+        Serial.printf("File not found '%s'\n", filename.c_str());
         return;
     }
 
@@ -53,7 +53,7 @@ void SwitchUI::drawBmp(const char *filename) {
     uint32_t startTime = millis();
     w = read16(bmpFS);
     h = read16(bmpFS);
-    
+    Serial.printf("%dx%d\n", w, h);
     uint16_t y = 0;
     tft.setSwapBytes(false);  
 
@@ -78,33 +78,29 @@ void SwitchUI::drawBmp(const char *filename) {
 void SwitchUI::drawBmp(const class Button* bt){
     if (state.wasConnected) {
         if (bt->isPressed()){
-            drawBmp("/MMD.istl", bt->l, bt->t, bt->w(), bt->h());
+            drawBmp(pageSelName(), bt->l, bt->t, bt->w(), bt->h());
         } else {
-            drawBmp("/MM.istl", bt->l, bt->t, bt->w(), bt->h());
+            drawBmp(pageDefName(), bt->l, bt->t, bt->w(), bt->h());
         }
     } else {
-        drawBmp("/MMX.istl", bt->l, bt->t, bt->w(), bt->h());
+        drawBmp(pageDisName(), bt->l, bt->t, bt->w(), bt->h());
     }
 }
 
-void SwitchUI::drawBmp(const char *filename, const class Button* bt){
+void SwitchUI::drawBmp(std::string filename, const class Button* bt){
     drawBmp(filename, bt->l, bt->t, bt->w(), bt->h());
 }
 
-uint16_t* dataBuffer = NULL;
-
-void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite) {
-
+void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite, int16_t offX, int16_t offY) {
     if ((x >= tft.width()) || (y >= tft.height())) return;
 
     fs::File bmpFS;
-
     // Open requested file on SD card
-    bmpFS = SPIFFS.open(filename, "r");
+    bmpFS = SD.open(filename.c_str(), "r");
 
     if (!bmpFS)
     {
-        Serial.printf("File not found '%s'\n", filename);
+        Serial.printf("File not found '%s'\n", filename.c_str());
         return;
     }
 
@@ -128,8 +124,8 @@ void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, i
             tptr += wd*eSz;
             bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);            
         }   
-        if (toSprite) spr.pushImage(0, 0, wd, hg, (uint16_t*)lineBuffer);     
-        else tft.pushImage(x, y, wd, hg, (uint16_t*)lineBuffer);
+        if (toSprite) spr.pushImage(offX, offY, wd, hg, (uint16_t*)lineBuffer);     
+        else tft.pushImage(x+offX, y+offY, wd, hg, (uint16_t*)lineBuffer);
         free(lineBuffer);
     } else {
         uint16_t lineBuffer[wd];
@@ -140,8 +136,8 @@ void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, i
             bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);
             // Push the pixel row to screen, pushImage will crop the line if needed
             // y is decremented as the BMP image is drawn bottom up
-            if (toSprite) spr.pushImage(0, row, wd, 1, (uint16_t*)lineBuffer);     
-            else tft.pushImage(x, y++, wd, 1, (uint16_t*)lineBuffer);
+            if (toSprite) spr.pushImage(offX, row + offY, wd, 1, (uint16_t*)lineBuffer);     
+            else tft.pushImage(x+offX, (y++) + offY, wd, 1, (uint16_t*)lineBuffer);
         }
     }
     Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
@@ -150,8 +146,10 @@ void SwitchUI::drawBmp(const char *filename, int16_t x, int16_t y, int16_t wd, i
     bmpFS.close();
 }
 
-
-
+struct AlphaCol{
+    uint16_t col;
+    uint8_t alpha;
+};
 
 inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
     return (((31*(r+4))/255)<<11) | 
@@ -159,13 +157,103 @@ inline uint16_t rgb(uint8_t r, uint8_t g, uint8_t b){
                ((31*(b+4))/255);
 }
 
-SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(TFT_eSprite(&tft)){
+struct DefInput {
+    uint16_t l;
+    uint16_t t;
+    uint16_t r;
+    uint16_t b;
 
+    uint8_t type;
+    uint8_t id;
+    uint8_t state;
+    uint8_t altState;
+    uint8_t page;
+
+    char name[9];
+};
+
+void SwitchUI::ReadDefinitions(const char *filename) {
+    fs::File defFS;
+
+    // Open requested file on SD card
+    defFS = SD.open(filename, "r");
+
+    if (!defFS)
+    {
+        Serial.printf("File not found '%s'\n", filename);
+        return;
+    }
+
+    uint16_t buttonCount, pageCount;
+    
+
+    uint32_t startTime = millis();
+    buttonCount = defFS.read();
+    pageCount = defFS.read();
+    Serial.printf("Counts: %d, %d\n", buttonCount, pageCount);
+
+    char pageName[3];
+    pageName[2] = 0;
+    for (int i=0; i<pageCount; i++){
+        for (int k =0; k<2; k++) {
+            pageName[k] = defFS.read();
+            
+        }
+        std::string s(pageName);
+        this->pages.push_back(s);
+        Serial.printf("Page %d = %s\n", i, pageName);
+    }
+
+    DefInput def;
+    for (int i=0; i<buttonCount; i++){
+        defFS.read((uint8_t*)&def, sizeof(DefInput));
+        if (def.state == def.altState) {
+            this->addButton(
+                new Button(
+                    def.id, 
+                    (DailyBluetoothSwitchServer::DBSNotificationStates)def.state, 
+                    def.name,           
+                    def.l, 
+                    def.t, 
+                    def.r, 
+                    def.b, 
+                    rgb(220, 0, 0),
+                    def.page,
+                    (ButtonType)def.type
+                )
+            );
+        } else {
+            this->addButton(
+                new Button(
+                    def.id, 
+                    (DailyBluetoothSwitchServer::DBSNotificationStates)def.state, 
+                    (DailyBluetoothSwitchServer::DBSNotificationStates)def.altState, 
+                    def.name,           
+                    def.l, 
+                    def.t, 
+                    def.r, 
+                    def.b, 
+                    rgb(0, 0, 220),
+                    def.page,
+                    (ButtonType)def.type
+                )
+            );
+        }
+        Serial.printf("Button %d = %d - %d, %s\n", i, def.page, def.id, def.name);
+    }
+    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
+    Serial.println(" ms");
+    
+    defFS.close();
+}
+
+SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(TFT_eSprite(&tft)){
     spr.setColorDepth(16);
-    spr.createSprite(150, 70);
+    spr.createSprite(98, 184);
 
     temperature = NAN;
     humidity = NAN;
+    currentPage = 0;
     state.wasConnected = false;
     state.drewConnected = true;
     state.dirty = true;
@@ -174,36 +262,15 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
     state.touchDown = false;
     state.blockUntilRelease = false;
     
-    this->addButton(new Button(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Wohnzimmer",           
-        LEF(), TOP(0), XP1(), BOT(0), rgb(220, 0, 0)));
-    this->addButton(new Button(1, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
-        XP1(), TOP(0), XP2(), BOT(0), rgb(255, 0, 0)));
-    this->addButton(new Button(1, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
-        XP2(), TOP(0), RIG(), BOT(0), rgb(150, 0, 0)));
-
-    this->addButton(new Button(2, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Eszimmer",
-        LEF(), TOP(1), XP1(), BOT(1), rgb(0, 220, 0)));
-    this->addButton(new Button(2, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
-        XP1(), TOP(1), XP2(), BOT(1), rgb(0, 255, 0)));
-    this->addButton(new Button(2, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
-        XP2(), TOP(1), RIG(), BOT(1), rgb(0, 150, 0)));
-
-    this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "Küche",           
-        LEF(), TOP(2), XP1(), BOT(2), rgb(0, 0, 220)));
-    this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::ON_SECONDARY, "",
-        XP1(), TOP(2), XP2(), BOT(2), rgb(0, 0, 255)));
-    this->addButton(new Button(3, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, "",
-        XP2(), TOP(2), RIG(), BOT(2), rgb(0, 0, 150)));
-
-    this->addButton(new Button(4, DailyBluetoothSwitchServer::DBSNotificationStates::OFF, DailyBluetoothSwitchServer::DBSNotificationStates::ON, "",
-        XP2(), 380, RIG(), 380+79, rgb(0, 0, 150)));
-        
+    ReadDefinitions("/DEF.BTS");
+    
     //Serial.printf("Initialized Buttons %d\n", buttons.size());
     
     Serial.println("Initializing TFT...");
     
     tft.init();
-    tft.setRotation(2);
+    tft.setRotation(3);
+
 
     this->prepareTouchCalibration(force_calibration);
 
@@ -211,6 +278,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
 }
 
 void SwitchUI::prepareTouchCalibration(bool force_calibration){
+#ifndef HEADLESS
     Serial.println("Read Calibration Data");   
     // check if calibration file exists
     bool calDataOK = false;
@@ -225,14 +293,19 @@ void SwitchUI::prepareTouchCalibration(bool force_calibration){
     } else {
         startTouchCalibration();
     }
+#else
+    FileSystem::init();
+#endif
 }
 
 void SwitchUI::startTouchCalibration(){
+#ifndef HEADLESS
   Serial.println("Prepare Calibrating Touch");
 
   tft.fillScreen(TFT_WHITE);
   tft.setCursor(20, 0, 2);
   tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
+  tft.loadFont("RobotoCondensed-Regular-12");
   tft.println("calibration run");
   
   Serial.println("Calibrating Touch");
@@ -242,6 +315,7 @@ void SwitchUI::startTouchCalibration(){
   FileSystem::global()->writeCalibrationFile((const char*)calibrationData);  
 
   this->redrawAll();
+#endif
 }
 
 void SwitchUI::setBrightness(uint8_t val){
@@ -269,7 +343,7 @@ void SwitchUI::temperaturChanged(float tmp){
 void SwitchUI::drawTemperatureState(){
     spr.setColorDepth(16);
     spr.setSwapBytes(true);
-    drawBmp("/MM.istl", 10, 00, spr.width(), spr.height(), true);
+    drawBmp(pageDefName(), 406, 00, spr.width(), spr.height(), true);
 
 #ifdef SI7021_DRIVER
     spr.loadFont("RobotoCondensed-Light-42");
@@ -299,7 +373,7 @@ void SwitchUI::drawTemperatureState(){
     spr.unloadFont();
 #endif*/
 
-    spr.pushSprite(10, 00);
+    spr.pushSprite(406, 00);
     
 }
 
@@ -346,37 +420,42 @@ void SwitchUI::connectionStateChanged(bool stateIn){
 }
 
 void SwitchUI::drawInternalState(){
-    tft.fillRect(150, 461, 140, 20, TFT_BLACK);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
-
     tft.loadFont("RobotoCondensed-Light-12");
+    tft.fillRect(380, 305, 25, 15, TFT_WHITE);
     tft.setTextDatum(TR_DATUM);
     tft.setCursor(310, 463, 2);
+    tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
 #ifdef BH1750_DRIVER
-    tft.drawString((String)((int)lux)+" lx   " + (String)((int)temperatureIntern)+"°", 310, 464);                    
+    tft.drawString((String)((int)lux)+" lx   " + (String)((int)temperatureIntern)+"°", , 400, 306, 2);                    
 #else
-    tft.drawString((String)((int)temperatureIntern)+"°", 310, 463); 
+    if (temperatureIntern > 0 && temperatureIntern<500)
+        tft.drawString((String)((int)temperatureIntern)+"°", 400, 307, 2); 
+    else
+        tft.drawString("ERR", 400, 306, 2); 
 #endif
     tft.unloadFont();
 }
 
 void SwitchUI::drawConnectionState(){
     tft.loadFont("RobotoCondensed-Regular-12");
-    tft.fillRect(66, 461, 110, 20, TFT_BLACK);
-    tft.setTextDatum(TL_DATUM);
-    tft.setCursor(66, 463, 2);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(1);
-    if (state.wasConnected) tft.println(F("verbunden"));
-    else tft.println(F("NICHT verbunden"));
-
+    tft.fillRect(406, 305, 74, 15, TFT_WHITE);
+    tft.setTextDatum(TC_DATUM);
+    tft.setCursor(443, 305, 2);
+    tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
+    
+    if (state.wasConnected) tft.drawCentreString("verbunden", 443, 306, 2);
+    else tft.drawCentreString("suche...", 443, 306, 2);
+    
     tft.unloadFont();
 
     if (state.drewConnected != state.wasConnected){
         state.drewConnected = state.wasConnected;
+        std::string f;
         if (state.wasConnected == true)
-            drawBmp("/MM.istl", 0, 70, 320, 480-70-20);
+            f = pageDefName();            
         else
-            drawBmp("/MMX.istl", 0, 70, 320, 480-70-20);
+            f = pageDisName();
+        drawBmp(f, 0, 0, 406, 223);
     }
 }
 
@@ -384,25 +463,34 @@ void SwitchUI::redrawAll(){
     state.dirty = false;
     Serial.printf("Redraw all %d\n", buttons.size());
     if (state.wasConnected == true)
-        drawBmp("/MM.istl");
+        drawBmp(pageDefName());
     else
-        drawBmp("/MMX.istl");
+        drawBmp(pageDisName());
 
     //Serial.printf("Redraw state\n", buttons.size());
-    drawConnectionState(); 
+    drawConnectionState();
     drawInternalState();
     drawTemperatureState(); 
 }
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
     for (auto button : buttons) {
-        if (button->inside(x, y)) return button;        
+        if (button->inside(x, y) && button->page() == currentPage) {            
+            return button;        
+        }
     } 
 
     return NULL;
 }
 
-
+void SwitchUI::handleButtonPress(const Button* btn){
+    if (btn->type() == ButtonType::PAGE){
+        currentPage = btn->id;
+        redrawAll();
+    } else {
+        this->pressRoutine(btn->id, btn->activeState());
+    }
+}
 
 void SwitchUI::scanTouch(){
     uint16_t x, y;
@@ -433,7 +521,7 @@ void SwitchUI::scanTouch(){
         if (!state.touchDown) touchRoutine(true);
         state.touchDown = true;
         lastDown = micros();
-        //Serial.printf("touch %d, %d\n", x, y);
+        Serial.printf("touch %d, %d\n", x, y);
         
         //ignore touches when we reactivate
         if (SleepTimer::global()->noBacklight()) {
@@ -470,7 +558,8 @@ void SwitchUI::scanTouch(){
                         drawBmp(nowButton);
                     }
                     //nowButton->draw(this, TFT_YELLOW);
-                    this->pressRoutine(nowButton->id, nowButton->activeState());
+                    //this->pressRoutine(nowButton->id, nowButton->activeState());#
+                    handleButtonPress(nowButton);
                 }
                 pressedButton = nowButton;           
             }                

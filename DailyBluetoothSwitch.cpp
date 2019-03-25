@@ -4,7 +4,7 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
     whenConnected = NULL;
     BLEClientConnected = false;
     characteristic = NULL;
-    std::string baseName = "AmberSmart.Switch";
+    std::string baseName = "AmberSmart.Switch" + name;
 
     BLEDevice::init(baseName);
     BLEServer *pServer = BLEDevice::createServer();

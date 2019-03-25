@@ -11,6 +11,12 @@ class FileSystem {
             return FileSystem::_global;
         }
 
+        static inline void init(){
+            if (FileSystem::_global == NULL){
+                FileSystem::_global = new FileSystem();
+            }
+        }
+
         bool readCalibrationFile(char* calibrationData);
         void writeCalibrationFile(const char* calibrationData);
     private:

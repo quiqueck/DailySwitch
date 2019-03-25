@@ -5,11 +5,15 @@
 
 #include <Arduino.h>
 #include <FunctionalInterrupt.h>
+#include <pins_arduino.h>
+#include <SPI.h>
+#include <SD.h>
 #include "ESP32Setup.h"
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
 #include "SleepTimer.h"
+#include "FileSystem.h"
 
 #include "DailyBluetoothSwitch.h"
 
@@ -73,19 +77,29 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println(F("Starting Daily Switch"));
+    
+    //pinMode(LED,OUTPUT);
+    //pinMode(SDCARD_CS, OUTPUT);
+    //digitalWrite(SDCARD_CS, HIGH);
 
-    pinMode(SDCARD_CS, OUTPUT);
-    digitalWrite(SDCARD_CS, HIGH);
+    FileSystem::init();
+    if (!SD.begin(SDCARD_CS)){
+        Serial.println("SD-Card Initialization failed.");
+    }
+    Serial.printf("SD-Info: %dMB/%dMB \n", SD.usedBytes()/(1024*1024), SD.totalBytes()/(1024*1024));
 
     ui = new SwitchUI(buttonEvent, touchPanelEvent, false);
+#ifdef HEADLESS
+    dbss = new DailyBluetoothSwitchServer("HL.001");
+#else
     dbss = new DailyBluetoothSwitchServer("001");
+#endif
     dbss->setConnectionCallback(stateChanged);
 
     t1 = new TouchPin(T0, forceCalib, 100);
     
 	//pinMode(TFT_IRQ, INPUT);
     //attachInterrupt(digitalPinToInterrupt(TFT_IRQ), touchEvent, FALLING);
-
     SleepTimer::begin(ui);    
 
     dbss->startAdvertising();
@@ -114,6 +128,8 @@ void setup()
     pinMode(AUDIO_PIN, INPUT);
     sampling_period_us = round(1000000*(1.0/samplingFrequency));
     #endif
+
+    
 }
 
 volatile bool triggerStateUpdate = true;
@@ -126,6 +142,12 @@ void stateChanged(bool state){
 
 void loop()
 {
+    //turn off LED
+    /*digitalWrite(LED, LOW); 
+    delay(500);
+    digitalWrite(LED, HIGH); 
+    delay(1500);*/
+
     static uint32_t count = 1000;
     count++;
     if (!triggerStateUpdate) {
