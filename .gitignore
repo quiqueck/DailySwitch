@@ -1,3 +1,6 @@
 Artwork/converter/node_modules
 *.IST
 *.png
+backup
+*.BTS
+.vscode/ipch
