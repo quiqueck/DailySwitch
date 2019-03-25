@@ -1,6 +1,7 @@
 #ifndef __SWITCH_UI_H__
 #define __SWITCH_UI_H__
 
+#include "ESP32Setup.h"
 #include <TFT_eSPI.h>
 #include <functional>
 #include <cmath>

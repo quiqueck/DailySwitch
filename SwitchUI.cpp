@@ -54,7 +54,7 @@ void SwitchUI::drawBmp(std::string filename) {
     uint32_t startTime = millis();
     w = read16(bmpFS);
     h = read16(bmpFS);
-    Serial.printf("%dx%d\n", w, h);
+    //Serial.printf("%dx%d\n", w, h);
     uint16_t y = 0;
     tft.setSwapBytes(false);  
 
@@ -299,6 +299,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
 }
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(mySprite(&tft)){
+    Serial.printf("Resolution: %dx%d", tft.width(), tft.height());
     spr.setColorDepth(16);
     spr.createSprite(98, 184);
 

@@ -5,9 +5,9 @@
             "includePath": [
                 "/Users/frank/Documents/Arduino/hardware/espressif/esp32/**",
                 "/Users/frank/Documents/Arduino/hardware/espressif/esp32/libraries/**",
-                "${workspaceFolder}/libraries/ESP32_AnalogWrite-master/**",
-                "${workspaceFolder}/libraries/TFT_eSPI/**",
-                "${workspaceFolder}/libraries/BH1750/**",
+                "${workspaceFolder}/lib/ESP32_AnalogWrite-master/**",
+                "${workspaceFolder}/lib/TFT_eSPI/**",
+                "${workspaceFolder}/lib/BH1750/**",
                 "${workspaceFolder}/**"
             ],
             "forcedInclude": [],
