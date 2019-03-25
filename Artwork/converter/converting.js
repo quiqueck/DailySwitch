@@ -13,8 +13,9 @@ const fs = require('fs'),
 function convert(inFile, outFile, alpha){
     fs.createReadStream(inFile)
       .pipe(new PNG())
-      .on('parsed', function() {        
-        let sz = alpha ? 3 : 2;
+      .on('parsed', function() {      
+        console.log(inFile);  
+        let sz = alpha ? 4 : 2;
         let outData =  Buffer.alloc(this.height*this.width*sz + 4);
         let outPos = 0;
 
@@ -29,11 +30,13 @@ function convert(inFile, outFile, alpha){
                 const r = this.data[idx+0]
                 const g = this.data[idx+1]
                 const b = this.data[idx+2]
+                if (outPos < 32) console.log(r, g, b);
                 const word = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
                 outData[outPos++] = (word>>8)&0xff;
                 outData[outPos++] = word&0xff;    
-                if (alpha) {
-                    outData[outPos++] = this.data[idx+3]
+                if (alpha) {                    
+                    outData[outPos++] = this.data[idx+3];
+                    outData[outPos++] = this.data[idx+3];
                 }            
             }
         }
@@ -114,9 +117,9 @@ convert ('Plan.png', 'PL.IST', false);
 convert ('PlanDown.png', 'PLD.IST', false);
 convert ('PlanDis.png', 'PLX.IST', false);
 
-convert ('LightLevel.png', 'LL.IST', false);
-convert ('LightLevelDown.png', 'LLD.IST', false);
-convert ('LightLevelDis.png', 'LLX.IST', false);
+convert ('LightLevel.png', 'LL.IST', true);
+convert ('LightLevelDown.png', 'LLD.IST', true);
+convert ('LightLevelDis.png', 'LLX.IST', true);
 
 let buttons = [
     {l:22, t:28, w:70, h:52, 

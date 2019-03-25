@@ -1,9 +1,11 @@
 #ifndef __SWITCH_UI_H__
 #define __SWITCH_UI_H__
 
+#include "ESP32Setup.h"
 #include <TFT_eSPI.h>
 #include <functional>
 #include <cmath>
+#include "Sprite.h"
 #include "DailyBluetoothSwitch.h"
 
 #define TOUCH_BOX_SIZE 86
@@ -41,6 +43,7 @@ class SwitchUI{
     protected:
         void drawBmp(std::string filename);
         void drawBmp(std::string filename, int16_t x, int16_t y, int16_t w, int16_t h, bool toSprite=false, int16_t offX=0, int16_t offY=0);
+        void drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t w, int16_t h,  int16_t offX=0, int16_t offY=0);
         void drawBmp(std::string filename, const  class Button* bt);
         void drawBmp(const class Button* bt);
         void prepareTouchCalibration(bool force_calibration=false);
@@ -55,7 +58,7 @@ class SwitchUI{
     public:
         TFT_eSPI tft;
     private:
-        TFT_eSprite spr;
+        mySprite spr;
         const std::function<void(uint8_t, uint8_t)> pressRoutine;        
         const std::function<void(bool)> touchRoutine;        
 
