@@ -86,14 +86,14 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
     delay(1);
   }
 
-  //  Serial.print("Z = ");Serial.println(z1);
+    //Serial.print("Z = ");Serial.println(z1);
 
   if (z1 <= threshold) return false;
     
   getTouchRaw(&x_tmp,&y_tmp);
 
-  //  Serial.print("Sample 1 x,y = "); Serial.print(x_tmp);Serial.print(",");Serial.print(y_tmp);
-  //  Serial.print(", Z = ");Serial.println(z1);
+    //Serial.print("Sample 1 x,y = "); Serial.print(x_tmp);Serial.print(",");Serial.print(y_tmp);
+    //Serial.print(", Z = ");Serial.println(z1);
 
   delay(1); // Small delay to the next sample
   if (getTouchRawZ() <= threshold) return false;
@@ -101,8 +101,8 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
   delay(2); // Small delay to the next sample
   getTouchRaw(&x_tmp2,&y_tmp2);
   
-  //  Serial.print("Sample 2 x,y = "); Serial.print(x_tmp2);Serial.print(",");Serial.println(y_tmp2);
-  //  Serial.print("Sample difference = ");Serial.print(abs(x_tmp - x_tmp2));Serial.print(",");Serial.println(abs(y_tmp - y_tmp2));
+    //Serial.print("Sample 2 x,y = "); Serial.print(x_tmp2);Serial.print(",");Serial.println(y_tmp2);
+    //Serial.print("Sample difference = ");Serial.print(abs(x_tmp - x_tmp2));Serial.print(",");Serial.println(abs(y_tmp - y_tmp2));
 
   if (abs(x_tmp - x_tmp2) > _RAWERR) return false;
   if (abs(y_tmp - y_tmp2) > _RAWERR) return false;
@@ -219,7 +219,7 @@ void TFT_eSPI::calibrateTouch(uint16_t *parameters, uint32_t color_fg, uint32_t 
 
     for(uint8_t j= 0; j<8; j++){
       // Use a lower detect threshold as corners tend to be less sensitive
-      while(!validTouch(&x_tmp, &y_tmp, Z_THRESHOLD/2));
+      while(!validTouch(&x_tmp, &y_tmp, Z_THRESHOLD/1.4));
       values[i*2  ] += x_tmp;
       values[i*2+1] += y_tmp;
       }
