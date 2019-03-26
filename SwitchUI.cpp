@@ -121,12 +121,14 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
             x -= offX;
             offX = 0;
         }
+        if (wd<=0) return;
 
         if (offY < 0) {
             hg += offY;
             y -= offY;
             offY = 0;
         }
+        if (hg<=0) return;
     }
 
 
@@ -365,7 +367,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
     lightLevelW = 1;
     lightLevelH = 1;
     state.currentPage = 0;
-    state.pushPage = 1;
+    state.pushPage = 0;
     state.wasConnected = false;
     state.drewConnected = true;
     state.dirty = true;
@@ -575,9 +577,14 @@ void SwitchUI::drawConnectionState(){
 void SwitchUI::redrawAll(){
     state.dirty = false;
     Serial.printf("Redraw all %d\n", buttons.size());
-    if (state.wasConnected == true)
+    if (state.wasConnected == true) {
         drawBmp(pageDefName());
-    else
+        for (auto button : buttons) {
+            if (button->isPressed()){
+                drawBmp(button);
+            }
+        }
+    } else
         drawBmp(pageDisName());
 
     //Serial.printf("Redraw state\n", buttons.size());
@@ -604,22 +611,29 @@ Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
     return NULL;
 }
 
+void SwitchUI::returnToNormalState(){
+    handleLightLevelSelect(NULL);
+}
+
 void SwitchUI::reloadMainPage() {
     if (selectButton){
         selectButton->up();
         drawBmp(selectButton);
         selectButton = NULL;
     }
-    
+
     if (state.currentPage != 0){        
         state.currentPage = 0;
+        state.pushPage = 0;
         redrawAll();
     }
 }
 
 void SwitchUI::handleLightLevelSelect(Button* btn){
-    state.currentPage = state.pushPage;        
-    drawBmp(pageDefName(), lightLevelX, lightLevelY, lightLevelW, lightLevelH); 
+    if (state.currentPage == LIGHT_LEVEL_PAGE) {
+        state.currentPage = state.pushPage;        
+        drawBmp(pageDefName(), lightLevelX, lightLevelY, lightLevelW, lightLevelH); 
+    }
 
     if (selectButton) {
         Serial.println("Finish LightLevelSelect...");
@@ -637,6 +651,7 @@ void SwitchUI::handleButtonPress(Button* btn){
         handleLightLevelSelect(btn);
     } else if (btn->type() == ButtonType::PAGE){
         state.currentPage = btn->id;
+        state.pushPage = btn->id;
         redrawAll();
     } else if (btn->type() == ButtonType::SELECT){
         Serial.printf("Undo Button %X\n", pressedButton);

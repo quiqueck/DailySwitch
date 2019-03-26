@@ -40,6 +40,7 @@ class SwitchUI{
         inline void displayOff() { tft.writecommand(0x10); delay(6); }
         inline void displayOn() { tft.writecommand(0x11); delay(6); }
         void reloadMainPage();
+        void returnToNormalState();
 
         inline void addButton(class Button* b){ buttons.push_back(b); }
     protected:

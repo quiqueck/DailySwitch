@@ -180,18 +180,13 @@ let buttons = [
         page:0
     },
     {l:317, t:28, w:70, h:52, 
-        type:SWITCH, id:4, state:ON,
-        altState:OFF, name:"SOUND",
+        type:SWITCH, id:5, state:OFF,
+        altState:ON, name:"SPECIAL",
         page:0
     },
     {l:317, t:100, w:70, h:52, 
-        type:SWITCH, id:5, state:ON,
-        altState:OFF, name:"SPECIAL",
-        page:0
-    },
-    {l:317, t:100, w:70, h:52, 
-        type:SWITCH, id:5, state:ON,
-        altState:OFF, name:"SPECIAL",
+        type:SWITCH, id:4, state:OFF,
+        altState:ON, name:"SOUND",
         page:0
     },
     {l:418, t:223, w:48, h:48, 
@@ -235,11 +230,11 @@ let buttons = [
         page:1
     },{l:256, t:131, w:48, h:48, 
         type:SELECT, id:13, state:ON,
-        name:"KUC_LI",
+        name:"KUC_RE",
         page:1
     },{l:325, t:131, w:48, h:48, 
         type:SELECT, id:14, state:ON,
-        name:"KUC_RE",
+        name:"KUC_LI",
         page:1
     },
     
