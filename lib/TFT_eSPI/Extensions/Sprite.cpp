@@ -1313,8 +1313,8 @@ size_t TFT_eSprite::write(uint8_t utf8)
     uint16_t unicode = decodeUTF8(utf8);
     if (unicode < 32 && utf8 != '\n') return 0;
 
-    //fontFile = SPIFFS.open( _gFontFilename, "r" );
-    //fontFile = SPIFFS.open( this->_gFontFilename, "r" );
+    //fontFile = SD.open( _gFontFilename, "r" );
+    //fontFile = SD.open( this->_gFontFilename, "r" );
 
     //if(!fontFile)
     //{
@@ -1910,7 +1910,7 @@ void TFT_eSprite::printToSprite(char *cbuffer, int len) //String string)
 {
   if(!this->fontLoaded) return;
   
-  //fontFile = SPIFFS.open( this->_gFontFilename, "r" );
+  //fontFile = SD.open( this->_gFontFilename, "r" );
 
   if(!this->fontFile)
   {

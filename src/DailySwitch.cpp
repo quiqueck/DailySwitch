@@ -85,10 +85,7 @@ void setup()
     //digitalWrite(SDCARD_CS, HIGH);
 
     FileSystem::init();
-    if (!SD.begin(SDCARD_CS, SPI, SPI_FREQUENCY*2)){
-        Serial.println("SD-Card Initialization failed.");
-    }
-    Serial.printf("SD-Info: %dMB/%dMB \n", SD.usedBytes()/(1024*1024), SD.totalBytes()/(1024*1024));
+    
 
     ui = new SwitchUI(buttonEvent, touchPanelEvent, false);
 #ifdef HEADLESS

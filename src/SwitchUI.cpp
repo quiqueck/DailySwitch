@@ -420,7 +420,7 @@ void SwitchUI::startTouchCalibration(){
   tft.fillScreen(TFT_WHITE);
   tft.setCursor(20, 0, 2);
   tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
-  tft.loadFont("RobotoCondensed-Regular-12");
+  tft.loadFont("RCR12");
   tft.println("calibration run");
   
   Serial.println("Calibrating Touch");
@@ -461,7 +461,7 @@ void SwitchUI::drawTemperatureState(){
     drawBmp(pageDefName(), 406, 00, 480-406, 320, true);
 
 #ifdef SI7021_DRIVER
-    spr.loadFont("RobotoCondensed-Light-42");
+    spr.loadFont("RCL42");
     spr.setTextSize(1);
     spr.setCursor(0, 20);  
     spr.setTextColor(TFT_BLACK, TFT_WHITE); 
@@ -475,14 +475,14 @@ void SwitchUI::drawTemperatureState(){
     
     if (!isnan(humidity)){
         spr.setCursor(spr.getCursorX() - 10, 37); 
-        spr.loadFont("RobotoCondensed-Light-18");
+        spr.loadFont("RCL18");
         spr.print((String)((int)humidity)+"%");                
         spr.unloadFont();
     }
 #endif
 
 /*#ifdef BH1750_DRIVER
-    spr.loadFont("RobotoCondensed-Light-18");
+    spr.loadFont("RCL18");
     spr.setCursor(spr.getCursorX() + 10, 37); 
     spr.print((String)((int)lux)+" lx");                
     spr.unloadFont();
@@ -535,7 +535,7 @@ void SwitchUI::connectionStateChanged(bool stateIn){
 }
 
 void SwitchUI::drawInternalState(){
-    tft.loadFont("RobotoCondensed-Light-12");
+    tft.loadFont("RCL12");
     tft.fillRect(380, 305, 25, 15, TFT_WHITE);
     tft.setTextDatum(TR_DATUM);
     tft.setCursor(310, 463, 2);
@@ -552,7 +552,7 @@ void SwitchUI::drawInternalState(){
 }
 
 void SwitchUI::drawConnectionState(){
-    tft.loadFont("RobotoCondensed-Regular-12");
+    tft.loadFont("RCR12");
     tft.fillRect(406, 305, 74, 15, TFT_WHITE);
     tft.setTextDatum(TC_DATUM);
     tft.setCursor(443, 305, 2);

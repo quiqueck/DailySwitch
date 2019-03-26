@@ -8,7 +8,7 @@
 
 /***************************************************************************************
 ** Function name:           loadFont
-** Description:             loads parameters from a new font vlw file stored in SPIFFS
+** Description:             loads parameters from a new font vlw file stored in SD
 *************************************************************************************x*/
 void TFT_eSPI::loadFont(String fontName)
 {
@@ -79,12 +79,12 @@ void TFT_eSPI::loadFont(String fontName)
   _gFontFilename = "/" + fontName + ".vlw";
 
   // Avoid a crash on the ESP32 if the file does not exist
-  if (SPIFFS.exists(_gFontFilename) == false) {
+  if (SD.exists(_gFontFilename) == false) {
     Serial.println("Font file " + fontName + " not found!");
     return;
   }
 
-  fontFile = SPIFFS.open( _gFontFilename, "r");
+  fontFile = SD.open( _gFontFilename, "r");
 
   if(!fontFile) return;
 
@@ -128,7 +128,7 @@ void TFT_eSPI::loadMetrics(uint16_t gCount)
   gxAdvance =  (uint8_t*)malloc( gCount );    // xAdvance - to move x cursor
   gdY       =   (int8_t*)malloc( gCount );    // offset from bitmap top edge from lowest point in any character
   gdX       =   (int8_t*)malloc( gCount );    // offset for bitmap left edge relative to cursor X
-  gBitmap   = (uint32_t*)malloc( gCount * 4); // seek pointer to glyph bitmap in SPIFFS file
+  gBitmap   = (uint32_t*)malloc( gCount * 4); // seek pointer to glyph bitmap in SD file
 
 #ifdef SHOW_ASCENT_DESCENT
   Serial.print("ascent  = "); Serial.println(gFont.ascent);

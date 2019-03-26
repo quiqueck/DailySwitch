@@ -3908,7 +3908,7 @@ size_t TFT_eSPI::write(uint8_t utf8)
     uint16_t unicode = decodeUTF8(utf8);
     if (!unicode) return 0;
 
-    //fontFile = SPIFFS.open( _gFontFilename, "r" );
+    //fontFile = SD.open( _gFontFilename, "r" );
 
     //if(!fontFile)
     //{
@@ -4478,7 +4478,7 @@ int16_t TFT_eSPI::drawString(const char *string, int poX, int poY, int font)
     if (textcolor!=textbgcolor) fillRect(poX, poY, cwidth, cheight, textbgcolor);
     //drawLine(poX - 5, poY, poX + 5, poY, TFT_GREEN);
     //drawLine(poX, poY - 5, poX, poY + 5, TFT_GREEN);
-    //fontFile = SPIFFS.open( _gFontFilename, "r");
+    //fontFile = SD.open( _gFontFilename, "r");
     if(!fontFile) return 0;
     uint16_t len = strlen(string);
     uint16_t n = 0;
