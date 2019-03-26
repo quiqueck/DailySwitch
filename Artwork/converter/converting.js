@@ -14,7 +14,7 @@ function convert(inFile, outFile, alpha){
     fs.createReadStream(inFile)
       .pipe(new PNG())
       .on('parsed', function() {      
-        console.log(inFile);  
+        //console.log(inFile);  
         let sz = alpha ? 4 : 2;
         let outData =  Buffer.alloc(this.height*this.width*sz + 4);
         let outPos = 0;
@@ -30,7 +30,7 @@ function convert(inFile, outFile, alpha){
                 const r = this.data[idx+0]
                 const g = this.data[idx+1]
                 const b = this.data[idx+2]
-                if (outPos < 32) console.log(r, g, b);
+                //if (outPos < 32) console.log(r, g, b);
                 const word = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
                 outData[outPos++] = (word>>8)&0xff;
                 outData[outPos++] = word&0xff;    
@@ -52,12 +52,22 @@ function convert(inFile, outFile, alpha){
     });
 }
 
-function writeButtons(buttons, pages, outFile){
-    let outData =  Buffer.alloc(buttons.length * 22 + 2 + pages.length * 2);
+function writeButtons(buttons, lightLevel, pages, outFile){
+    let outData =  Buffer.alloc(buttons.length * 22 + 10 + pages.length * 2);
         let outPos = 0;
 
         outData[outPos++] = buttons.length&0xff; 
         outData[outPos++] = pages.length&0xff; 
+
+        outData[outPos++] = lightLevel.x&0xff;
+        outData[outPos++] = (lightLevel.x>>8)&0xff;
+        outData[outPos++] = lightLevel.y&0xff;
+        outData[outPos++] = (lightLevel.y>>8)&0xff;
+        outData[outPos++] = lightLevel.w&0xff;
+        outData[outPos++] = (lightLevel.w>>8)&0xff;
+        outData[outPos++] = lightLevel.h&0xff;
+        outData[outPos++] = (lightLevel.h>>8)&0xff;
+
         for (var i = 0; i < pages.length; i++) {
             for (let k=0; k<2; k++){
                 let c = pages[i][k] ? pages[i].charCodeAt(k) : 32;  
@@ -120,6 +130,8 @@ convert ('PlanDis.png', 'PLX.IST', false);
 convert ('LightLevel.png', 'LL.IST', true);
 convert ('LightLevelDown.png', 'LLD.IST', true);
 convert ('LightLevelDis.png', 'LLX.IST', true);
+
+let lightLevel = {x:(406-98)/2, y:(320-184)/2, w:98, h:184};
 
 let buttons = [
     {l:22, t:28, w:70, h:52, 
@@ -229,7 +241,24 @@ let buttons = [
         type:SELECT, id:14, state:ON,
         name:"KUC_RE",
         page:1
+    },
+    
+    
+    {l:lightLevel.x+14 + 5, t:lightLevel.y+14 + 5, w:70 - 10, h:52 - 10, 
+        type:SWITCH, id:0xff, state:ON_SECONDARY,
+        name:"LL_FULL",
+        page:0xF
+    },
+    {l:lightLevel.x+14 + 5, t:lightLevel.y+67 + 5, w:70 - 10, h:52 - 10 , 
+        type:SWITCH, id:0xff, state:ON,
+        name:"LL_MID",
+        page:0xF
+    },
+    {l:lightLevel.x+14 + 5, t:lightLevel.y+118 + 5, w:70 -10 , h:52 - 10, 
+        type:SWITCH, id:0xff, state:OFF,
+        name:"LL_OFF",
+        page:0xF
     }
 ];
 
-writeButtons(buttons, ['MM', 'PL'], 'DEF.BTS');
+writeButtons(buttons, lightLevel, ['MM', 'PL'], 'DEF.BTS');

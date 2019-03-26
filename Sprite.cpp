@@ -34,26 +34,26 @@ void  mySprite::pushImageAlpha(int32_t x, int32_t y, uint32_t w, uint32_t h, con
         const uint16_t addr = x + ys * _iwidth;
         inCol.value = _img[addr];
         if(!_iswapBytes) color.value = color.value<<8 | color.value>>8;
-        //color.alpha = 0xff;
-        //const word = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-        uint16_t rIn = (color.value >> 8) & 0xF8;
-        uint16_t gIn = (color.value >> 3) & 0xFC;
-        uint16_t bIn = (color.value) & 0xF8;
+        else {
+          inCol.value = inCol.value<<8 | inCol.value>>8;
+          color.value = color.value<<8 | color.value>>8;        
+        }
+        const uint16_t rIn = (color.value >> 8) & 0x00F8;
+        const uint16_t gIn = (color.value >> 3) & 0x00FC;
+        const uint16_t bIn = (color.value << 3) & 0x00F8;
         
-
-        const uint16_t rSrc = (inCol.value >> 8) & 0xF8;
-        const uint16_t gSrc = (inCol.value >> 3) & 0xFC;
-        const uint16_t bSrc = (inCol.value) & 0xF8;
+        const uint16_t bSrc = (inCol.value >> 8) & 0x00F8;
+        const uint16_t gSrc = (inCol.value >> 3) & 0x00FC;
+        const uint16_t rSrc = (inCol.value << 3) & 0x00F8;    
         const uint16_t aSrc = (0xff - color.alpha);
 
-        rIn = (color.alpha * rIn - aSrc * rSrc) >> 8;
-        gIn = (color.alpha * gIn - aSrc * gSrc) >> 8;
-        bIn = (color.alpha * bIn - aSrc * bSrc) >> 8;
-        //Serial.printf("%d, %d, %X: %X %X %X = %X (%X) -- %X \n", xp, yp, &data[xp + yp * w], rIn, gIn, bIn, color.value, color.alpha, *((uint32_t*)&color));
-        //float a = color.alpha / (float)0xff;
-        //_img[addr] = color.value;
-        //_img[addr] = ((rIn & 0xF8) << 8) | ((gIn & 0xFC) << 3) | (bIn >> 3);
-        _img[addr] = alphaBlend(color.alpha, color.value, inCol.value);
+        const uint16_t rOut = (color.alpha * rIn + aSrc * rSrc) >> 8;
+        const uint16_t gOut = (color.alpha * gIn + aSrc * gSrc) >> 8;
+        const uint16_t bOut = (color.alpha * bIn + aSrc * bSrc) >> 8;
+
+        color.value = ((rOut & 0xF8) << 8) | ((gOut & 0xFC) << 3) | (bOut >> 3);
+        if(_iswapBytes) color.value = color.value<<8 | color.value>>8;
+        _img[addr] = color.value;
         x++;
       }
       ys++;

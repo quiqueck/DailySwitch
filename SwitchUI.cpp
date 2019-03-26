@@ -70,21 +70,43 @@ void SwitchUI::drawBmp(std::string filename) {
         // y is decremented as the BMP image is drawn bottom up
         tft.pushImage(0, y++, w, 1, (uint16_t*)lineBuffer);
     }
-    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
+    Serial.printf("Loaded %s in ", filename.c_str()); Serial.print(millis() - startTime);
     Serial.println(" ms");
     
     bmpFS.close();
 }
 
-void SwitchUI::drawBmp(const class Button* bt){
-    if (state.wasConnected) {
-        if (bt->isPressed()){
-            drawBmp(pageSelName(), bt->l, bt->t, bt->w(), bt->h());
-        } else {
-            drawBmp(pageDefName(), bt->l, bt->t, bt->w(), bt->h());
-        }
+void SwitchUI::drawLightLevelBack(){
+    drawBmp(pageDefName(), lightLevelX, lightLevelY, lightLevelW, lightLevelH, true);
+    if (selectButton)
+        drawBmp(selectButton, true, selectButton->l - lightLevelX, selectButton->t - lightLevelY); 
+
+    drawBmpAlpha("/LL.IST", 0, 0, lightLevelW, lightLevelH, 0, 0);
+}
+
+void SwitchUI::drawBmp(const class Button* bt, bool toSprite, uint16_t offX, uint16_t offY){
+    //discard draw event if this button is not visible
+    if (!toSprite && bt->page() != state.currentPage)
+        return;
+
+    if (bt->page() == LIGHT_LEVEL_PAGE){        
+        //drawLightLevelBack();
+        if (bt->isPressed())
+            drawBmpAlpha(
+                    "/LLD.IST", 
+                    bt->l - lightLevelX, 
+                    bt->t - lightLevelY, 
+                    bt->w(), 
+                    bt->h(),
+                    bt->l - lightLevelX, 
+                    bt->t - lightLevelY
+            );       
+        spr.pushSprite(lightLevelX, lightLevelY);
+    } else if (state.wasConnected) {
+        std::string file = bt->isPressed() ? pageSelName() : pageDefName();
+        drawBmp(file, bt->l, bt->t, bt->w(), bt->h(), toSprite, offX, offY);        
     } else {
-        drawBmp(pageDisName(), bt->l, bt->t, bt->w(), bt->h());
+        drawBmp(pageDisName(), bt->l, bt->t, bt->w(), bt->h(), toSprite, offX, offY);
     }
 }
 
@@ -93,6 +115,21 @@ void SwitchUI::drawBmp(std::string filename, const class Button* bt){
 }
 
 void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite, int16_t offX, int16_t offY) {
+    if (toSprite){
+        if (offX < 0) {
+            wd += offX;
+            x -= offX;
+            offX = 0;
+        }
+
+        if (offY < 0) {
+            hg += offY;
+            y -= offY;
+            offY = 0;
+        }
+    }
+
+
     if ((x >= tft.width()) || (y >= tft.height())) return;
 
     fs::File bmpFS;
@@ -125,8 +162,9 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
             tptr += wd*eSz;
             bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);            
         }   
-        if (toSprite) spr.pushImage(offX, offY, wd, hg, (uint16_t*)lineBuffer);     
-        else tft.pushImage(x+offX, y+offY, wd, hg, (uint16_t*)lineBuffer);
+        if (toSprite) {
+            spr.pushImage(offX, offY, wd, hg, (uint16_t*)lineBuffer);     
+        } else tft.pushImage(x+offX, y+offY, wd, hg, (uint16_t*)lineBuffer);
         free(lineBuffer);
     } else {
         uint16_t lineBuffer[wd];
@@ -141,7 +179,7 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
             else tft.pushImage(x+offX, (y++) + offY, wd, 1, (uint16_t*)lineBuffer);
         }
     }
-    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
+    Serial.printf("Loaded %s in ", filename.c_str());  Serial.print(millis() - startTime);
     Serial.println(" ms");
     
     bmpFS.close();
@@ -149,6 +187,19 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
 
 
 void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, int16_t offX, int16_t offY) {
+    
+    if (offX < 0) {
+        wd += offX;
+        x -= offX;
+        offX = 0;
+    }
+
+    if (offY < 0) {
+        hg += offY;
+        y -= offY;
+        offY = 0;
+    }
+    
     if ((x >= tft.width()) || (y >= tft.height())) return;
 
     fs::File bmpFS;
@@ -193,7 +244,7 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
             spr.pushImageAlpha(offX, row + offY, wd, 1, (AlphaCol*)lineBuffer);
         }
     }
-    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
+    Serial.printf("Loaded %s in ", filename.c_str());  Serial.print(millis() - startTime);
     Serial.println(" ms");
     
     bmpFS.close();
@@ -241,6 +292,10 @@ void SwitchUI::ReadDefinitions(const char *filename) {
     uint32_t startTime = millis();
     buttonCount = defFS.read();
     pageCount = defFS.read();
+    lightLevelX = read16(defFS);
+    lightLevelY = read16(defFS);
+    lightLevelW = read16(defFS); //lightLevel Width
+    lightLevelH = read16(defFS); //lightLevel Height
     Serial.printf("Counts: %d, %d\n", buttonCount, pageCount);
 
     char pageName[3];
@@ -292,7 +347,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
         }
         Serial.printf("Button %d = %d - %d, %s\n", i, def.page, def.id, def.name);
     }
-    Serial.print(F("Loaded in ")); Serial.print(millis() - startTime);
+    Serial.printf("Loaded %s in ", filename);  Serial.print(millis() - startTime);
     Serial.println(" ms");
     
     defFS.close();
@@ -305,11 +360,17 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
 
     temperature = NAN;
     humidity = NAN;
-    currentPage = 1;
+    lightLevelX = 0;
+    lightLevelY = 0;
+    lightLevelW = 1;
+    lightLevelH = 1;
+    state.currentPage = 0;
+    state.pushPage = 1;
     state.wasConnected = false;
     state.drewConnected = true;
     state.dirty = true;
     pressedButton = NULL;
+    selectButton = NULL;
     lastDown = micros();
     state.touchDown = false;
     state.blockUntilRelease = false;
@@ -527,23 +588,71 @@ void SwitchUI::redrawAll(){
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
     for (auto button : buttons) {
-        if (button->inside(x, y) && button->page() == currentPage) {            
-            return button;        
+        if (button->inside(x, y)){
+            if (button->page() == state.currentPage) {            
+                return button;        
+            } else {
+                Serial.printf("%s: for %d, on %d\n", button->name, button->page(), state.currentPage);
+            }
         }
     } 
+
+    if (state.currentPage == LIGHT_LEVEL_PAGE){
+        handleLightLevelSelect(NULL);
+    }
 
     return NULL;
 }
 
-void SwitchUI::handleButtonPress(const Button* btn){
-    if (btn->type() == ButtonType::PAGE){
-        currentPage = btn->id;
+void SwitchUI::reloadMainPage() {
+    if (selectButton){
+        selectButton->up();
+        drawBmp(selectButton);
+        selectButton = NULL;
+    }
+    
+    if (state.currentPage != 0){        
+        state.currentPage = 0;
+        redrawAll();
+    }
+}
+
+void SwitchUI::handleLightLevelSelect(Button* btn){
+    state.currentPage = state.pushPage;        
+    drawBmp(pageDefName(), lightLevelX, lightLevelY, lightLevelW, lightLevelH); 
+
+    if (selectButton) {
+        Serial.println("Finish LightLevelSelect...");
+        if (btn!=NULL) {
+            this->pressRoutine(selectButton->id, btn->activeState());
+        }
+        selectButton->up();
+        drawBmp(selectButton);
+        selectButton = NULL;
+    }
+}
+
+void SwitchUI::handleButtonPress(Button* btn){
+    if (btn->page() == LIGHT_LEVEL_PAGE){
+        handleLightLevelSelect(btn);
+    } else if (btn->type() == ButtonType::PAGE){
+        state.currentPage = btn->id;
         redrawAll();
     } else if (btn->type() == ButtonType::SELECT){
-        Serial.println("Draw Alpha");
-        drawBmp(pageDefName(), (480-98)/2, (320-184)/2, 98, 184, true);
-        drawBmpAlpha("/LL.IST", 0, 0, 98, 184, 0, 0);
-        spr.pushSprite((480-98)/2, (320-184)/2);
+        Serial.printf("Undo Button %X\n", pressedButton);
+        //makes sure the button does NOT trigger yet  
+        if (pressedButton)
+            drawBmp(pressedButton);      
+        pressedButton = NULL;  
+
+        selectButton = btn;
+        state.pushPage = state.currentPage;
+        state.currentPage = LIGHT_LEVEL_PAGE;
+
+        Serial.printf("Draw Alpha %d\n", state.currentPage);
+        drawLightLevelBack();
+        spr.pushSprite(lightLevelX, lightLevelY);
+
         Serial.println("Done Alpha");
     } else {
         this->pressRoutine(btn->id, btn->activeState());

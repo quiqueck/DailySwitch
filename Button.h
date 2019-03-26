@@ -24,8 +24,7 @@ class Button {
                 bool pressed         : 1; 
                 bool hasAlt          : 1; 
                 ButtonType type      : 2;
-                uint8_t page         : 2;
-                uint8_t reserved     : 2;                
+                uint8_t page         : 4;                
             };
             uint8_t val;
         } currentState;

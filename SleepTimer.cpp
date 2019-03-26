@@ -69,7 +69,8 @@ void SleepTimer::setState(uint8_t s) {
         //timerSetDivider(timer, 80);
     } else if (s>=displayOffAt && state<displayOffAt) {
         Serial.print(F("Turn off Display "));
-        ui->displayOff();
+        ui->reloadMainPage();
+        ui->displayOff();        
     } else if (s>=6*5 && state<6*5) {
         /*esp_sleep_enable_ext0_wakeup(GPIO_NUM_32, LOW);
         Serial.println(F("Going to sleep now..."));
