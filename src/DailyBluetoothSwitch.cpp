@@ -48,7 +48,7 @@ void DailyBluetoothSwitchServer::startAdvertising() {
 
 void DailyBluetoothSwitchServer::sendNotification(uint16_t id, DBSNotificationStates state){
     char buffer[100];
-    sprintf(buffer, "{\"id\":%d, \"state\":%d}", id, state);
+    snprintf(buffer, 100, "{\"id\":%d, \"state\":%d}", id, state);
     characteristic->setValue(buffer);
     
     characteristic->notify();

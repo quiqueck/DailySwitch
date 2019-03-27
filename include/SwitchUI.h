@@ -23,6 +23,7 @@ class SwitchUI{
         void temperaturChanged(float tmp);
         void internalTemperatureChanged(float tmp);
         void humidityChanged(float hum);
+        void weatherChanged(class Weather* w);
         void luxChanged(float l);
         std::string  pageDefName() {
             if (pages.size() == 0) return "/MM.IST";

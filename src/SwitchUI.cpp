@@ -6,6 +6,7 @@
 #include "Button.h"
 #include "ESP32Setup.h"
 #include "Sprite.h"
+#include "Weather.h"
 #include <SD.h>
 
 
@@ -456,10 +457,33 @@ void SwitchUI::temperaturChanged(float tmp){
         drawTemperatureState();
     }    
 }
+
+void SwitchUI::weatherChanged(Weather* w){
+    drawTemperatureState();
+}
+
 void SwitchUI::drawTemperatureState(){
+    const int16_t barWidth = 74;
+    const Weather* w = Weather::global();
     spr.setColorDepth(16);
     spr.setSwapBytes(true);
-    drawBmp(pageDefName(), 406, 00, 480-406, 320, true);
+    drawBmp(pageDefName(), 406, 00, 480-406, 184, true);
+
+    if (w && w->hasValidData()){
+        drawBmpAlpha(w->icon(), 0, 0, 45, 45, (barWidth - 45) / 2, 48);
+
+        spr.loadFont("RCL42");
+        spr.setTextSize(1);
+        spr.setTextDatum(TC_DATUM);
+        
+        spr.setTextColor(TFT_BLACK, TFT_WHITE);
+
+        String txt = (String)((int) w->temperature())+"°";
+        int16_t wd = spr.textWidth(txt);
+        spr.setCursor((barWidth - wd)/2, 15);  
+        spr.print(txt);
+        spr.unloadFont();
+    }
 
 #ifdef SI7021_DRIVER
     spr.loadFont("RCL42");
@@ -489,8 +513,7 @@ void SwitchUI::drawTemperatureState(){
     spr.unloadFont();
 #endif*/
 
-    spr.pushSprite(406, 00);
-    
+    spr.pushSprite(406, 00);    
 }
 
 void SwitchUI::internalTemperatureChanged(float tmp){
@@ -592,6 +615,26 @@ void SwitchUI::redrawAll(){
     drawConnectionState();
     drawInternalState();
     drawTemperatureState(); 
+
+    /** fake data **/
+    spr.setColorDepth(16);
+    spr.setSwapBytes(true);
+    drawBmp(pageDefName(), 406, 00, 480-406, 184, true);
+    
+    drawBmpAlpha("/03d.IST", 0, 0, 45, 45, (74 - 45) / 2, 48);
+    spr.loadFont("RCL42");
+    spr.setTextSize(1);
+    spr.setTextDatum(TC_DATUM);
+    
+    spr.setTextColor(TFT_BLACK, TFT_WHITE);
+
+    String txt = (String)((int) 24)+"°";
+    int16_t wd = spr.textWidth(txt);
+    spr.setCursor((74 - wd)/2, 15);  
+    spr.print(txt);
+    spr.unloadFont();
+
+    spr.pushSprite(406, 00);
 }
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){

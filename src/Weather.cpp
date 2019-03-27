@@ -71,7 +71,7 @@ Weather::Weather(std::string keyIn, SwitchUI* uiIn){
     wtimer = timerBegin(1, 80, true);
 
     timerAttachInterrupt(wtimer, &onWeatherTimer, true);
-    timerAlarmWrite(wtimer, MINUTE(30), true);
+    timerAlarmWrite(wtimer, MINUTE(1), true);
     timerAlarmEnable(wtimer);
 
     lastUpdateCall = millis();
@@ -92,6 +92,30 @@ void Weather::stopWiFi(){
     WiFi.mode(WIFI_OFF);
 }
 
+float Weather::temperature() const{
+    return doc["main"]["temp"];
+}
+float Weather::pressure() const{
+    return doc["main"]["pressure"];
+}
+float Weather::humidity() const{
+    return doc["main"]["humidity"];
+}
+std::string Weather::icon() const{
+    const int wid = doc["weather"][0]["id"];
+    const char* icon = doc["weather"][0]["icon"];
+
+    if (wid==781) {
+        bool day = true;
+        if (icon && icon[2] == 'n') day = false;
+        char buffer[20];
+        snprintf(buffer, 20, "/%d%s.IST", wid, day?"d":"n");
+        return std::string(buffer);
+    }
+
+    return std::string("/") + icon + ".IST";                
+}
+
 void Weather::readData(){
     //https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22 
     HTTPClient http;
@@ -104,7 +128,6 @@ void Weather::readData(){
     int httpCode = http.GET();                                        //Make the request
  
     if (httpCode > 0) { //Check for the returning code 
-        
         // Serial.println(httpCode);
         if (httpCode == 200){
             String payload = http.getString();
@@ -115,10 +138,16 @@ void Weather::readData(){
             // Test if parsing succeeds.
             if (error) {
                 Serial.print(F("deserializeJson() failed: "));
-                Serial.println(error.c_str());
-                return;
+                Serial.println(error.c_str());                
             } else {
                 hasData = true;
+                uint16_t wid = doc["weather"][0]["id"];
+                const char* icon = doc["weather"][0]["icon"];
+                float temp = doc["main"]["temp"];
+                float pres = doc["main"]["pressure"];
+                float humi = doc["main"]["humidity"];
+                Serial.printf("Conditions: %d, %s, %f, %f, %f\n", wid, icon, temp, pres, humi);
+                ui->weatherChanged(this);
             }
             //Serial.println(payload);
         } else {
@@ -133,6 +162,8 @@ void Weather::readData(){
 }
 
 void Weather::update(){
+    return;
+
     lastUpdateCall = millis();
     if (state == WeatherUpdateState::IDLE || state == WeatherUpdateState::INIT) {
         Serial.println("Updating Weather Info...\n");

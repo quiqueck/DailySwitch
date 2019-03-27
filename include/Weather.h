@@ -17,6 +17,12 @@ class Weather {
 
         void tick();
         void update();
+
+        inline bool hasValidData() const { return hasData; }
+        float temperature() const;
+        float pressure() const;
+        float humidity() const;
+        std::string icon() const;
     protected:
         void startWiFi();
         void stopWiFi();
