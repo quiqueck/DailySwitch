@@ -60,22 +60,22 @@ void SleepTimer::setState(uint8_t s) {
             ui->setBrightness(0xFF);
         }
     } else if (s>=reduceBrightnessAt && state<reduceBrightnessAt) {
-        Serial.print(F("Reducing Brightness "));
+        Serial.print(F("Reducing Brightness \n"));
         ui->setBrightness(0x10);
         ui->returnToNormalState();
     } else if (s>=noBacklightAt && state<noBacklightAt) {
-        Serial.print(F("Turn off Backlight "));
+        Serial.print(F("Turn off Backlight \n"));
         ui->setBrightness(0x00);
         rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
         //timerSetDivider(timer, 80);
         ui->returnToNormalState();
     } else if (s>=displayOffAt && state<displayOffAt) {
-        Serial.print(F("Turn off Display "));
+        Serial.print(F("Turn off Display \n"));
         ui->reloadMainPage();
         ui->displayOff();        
     } else if (s>=6*5 && state<6*5) {
         /*esp_sleep_enable_ext0_wakeup(GPIO_NUM_32, LOW);
-        Serial.println(F("Going to sleep now..."));
+        Serial.println(F("Going to sleep now...\n"));
         esp_deep_sleep_start();*/
     }
 
