@@ -21,7 +21,7 @@ void forceCalib(uint8_t pin, bool pressed);
 
 #ifdef __cplusplus
 extern "C" {
-#endif aaa
+#endif 
 uint8_t temprature_sens_read();
 #ifdef __cplusplus
 }

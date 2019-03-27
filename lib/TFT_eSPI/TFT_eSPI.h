@@ -114,7 +114,7 @@
   #include <FS.h>
 
   #ifdef ESP32
-    #include <SD.h>>
+    #include <SD.h>
   #endif
 #endif
 
