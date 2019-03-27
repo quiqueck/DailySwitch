@@ -84,12 +84,16 @@ void Weather::startWiFi(){
     Console.print("Connecting to ");
     Console.println(ssid);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);     
+    WiFi.setSleep(true);
+    WiFi.begin(ssid, password);   
+    WiFi.setTxPower(WIFI_POWER_19_5dBm);  
 }
 
 void Weather::stopWiFi(){
-    WiFi.disconnect();
     Console.println("Turnin off WiFi."); 
+    WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);   
+    WiFi.disconnect();    
+    WiFi.setSleep(true);
     WiFi.mode(WIFI_OFF);
 }
 

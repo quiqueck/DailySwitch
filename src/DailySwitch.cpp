@@ -86,6 +86,18 @@ void setup()
     Serial.begin(115200);
     Console.println(F("Starting Daily Switch"));
 
+    // Configure dynamic frequency scaling:
+    // maximum and minimum frequencies are set in sdkconfig,
+    // automatic light sleep is enabled if tickless idle support is enabled.
+    esp_pm_config_esp32_t pm_config;
+     
+    pm_config.max_freq_mhz = 240;
+    pm_config.min_freq_mhz = 80;
+    pm_config.light_sleep_enable = true;
+
+    esp_pm_configure(&pm_config);
+
+
     //pinMode(LED,OUTPUT);
     //pinMode(SDCARD_CS, OUTPUT);
     //digitalWrite(SDCARD_CS, HIGH);
