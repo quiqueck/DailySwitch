@@ -10,8 +10,9 @@
 ** Function name:           loadFont
 ** Description:             loads parameters from a new font vlw file stored in SD
 *************************************************************************************x*/
-void TFT_eSPI::loadFont(String fontName)
+void TFT_eSPI::loadFont(String fontName, int8_t xSpacingIn)
 {
+  xSpacing = xSpacingIn;
   /*
     The vlw font format does not appear to be documented anywhere, so some reverse
     engineering has been applied!
@@ -142,7 +143,7 @@ void TFT_eSPI::loadMetrics(uint16_t gCount)
     gUnicode[gNum]  = (uint16_t)readInt32(); // Unicode code point value
     gHeight[gNum]   =  (uint8_t)readInt32(); // Height of glyph
     gWidth[gNum]    =  (uint8_t)readInt32(); // Width of glyph
-    gxAdvance[gNum] =  (uint8_t)readInt32(); // xAdvance - to move x cursor
+    gxAdvance[gNum] =  (uint8_t)readInt32() + xSpacing; // xAdvance - to move x cursor
     gdY[gNum]       =   (int8_t)readInt32(); // y delta from baseline
     gdX[gNum]       =   (int8_t)readInt32(); // x delta from cursor
     readInt32(); // ignored
