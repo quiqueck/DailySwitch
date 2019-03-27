@@ -470,12 +470,12 @@ void SwitchUI::drawTemperatureState(){
     const int16_t barWidth = 74;
     const Weather* w = Weather::global();
     spr.setColorDepth(16);
-    spr.createSprite(74, 78);
+    spr.createSprite(74, 80);
     spr.setSwapBytes(true);
-    drawBmp(pageDefName(), 406, 15, 74, 78, true);
+    drawBmp(pageDefName(), 406, 15, 74, 80, true);
 
     if (w && w->hasValidData()){
-        drawBmpAlpha(w->icon(), 0, 0, 45, 45, (barWidth - 45) / 2, 33);
+        drawBmpAlpha(w->icon(), 0, 0, 45, 45, (barWidth - 45) / 2, 35);
 
         spr.loadFont("RCL42", -4);
         spr.setTextSize(1);
@@ -734,6 +734,7 @@ void SwitchUI::scanTouch(){
     }
     
     if (tft.getTouch(&x, &y) && x>0 && y>0 && x<tft.width() && y<tft.height()) {
+        //tft.drawRect(x-2, y-2, 5, 5, TFT_RED);
         if (!state.touchDown) touchRoutine(true);
         state.touchDown = true;
         lastDown = micros();
