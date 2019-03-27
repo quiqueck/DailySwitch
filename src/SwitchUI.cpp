@@ -93,16 +93,19 @@ void SwitchUI::drawBmp(const class Button* bt, bool toSprite, uint16_t offX, uin
     if (bt->page() == LIGHT_LEVEL_PAGE){        
         //drawLightLevelBack();
         if (bt->isPressed())
+            spr.createSprite(bt->w(), bt->h());
+            
             drawBmpAlpha(
                     "/LLD.IST", 
                     bt->l - lightLevelX, 
                     bt->t - lightLevelY, 
                     bt->w(), 
                     bt->h(),
-                    bt->l - lightLevelX, 
-                    bt->t - lightLevelY
-            );       
-        spr.pushSprite(lightLevelX, lightLevelY);
+                    0, 
+                    0
+            );         
+            spr.pushSprite(bt->l, bt->t);
+            spr.deleteSprite();
     } else if (state.wasConnected) {
         std::string file = bt->isPressed() ? pageSelName() : pageDefName();
         drawBmp(file, bt->l, bt->t, bt->w(), bt->h(), toSprite, offX, offY);        
@@ -116,6 +119,7 @@ void SwitchUI::drawBmp(std::string filename, const class Button* bt){
 }
 
 void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite, int16_t offX, int16_t offY) {
+    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
     if (toSprite){
         if (offX < 0) {
             wd += offX;
@@ -187,11 +191,12 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
     Serial.println(" ms");
     
     bmpFS.close();
+    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
 }
 
 
 void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, int16_t offX, int16_t offY) {
-    
+    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
     if (offX < 0) {
         wd += offX;
         x -= offX;
@@ -252,6 +257,7 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
     Serial.println(" ms");
     
     bmpFS.close();
+    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
 }
 
 
@@ -358,9 +364,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
 }
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(mySprite(&tft)){
-    Serial.printf("Resolution: %dx%d", tft.width(), tft.height());
-    spr.setColorDepth(16);
-    spr.createSprite(98, 184);
+    Serial.printf("Resolution: %dx%d\n", tft.width(), tft.height());
 
     temperature = NAN;
     humidity = NAN;
@@ -466,13 +470,14 @@ void SwitchUI::drawTemperatureState(){
     const int16_t barWidth = 74;
     const Weather* w = Weather::global();
     spr.setColorDepth(16);
+    spr.createSprite(74, 78);
     spr.setSwapBytes(true);
-    drawBmp(pageDefName(), 406, 00, 480-406, 184, true);
+    drawBmp(pageDefName(), 406, 15, 74, 78, true);
 
     if (w && w->hasValidData()){
-        drawBmpAlpha(w->icon(), 0, 0, 45, 45, (barWidth - 45) / 2, 48);
+        drawBmpAlpha(w->icon(), 0, 0, 45, 45, (barWidth - 45) / 2, 33);
 
-        spr.loadFont("RCL42");
+        spr.loadFont("RCL42", -4);
         spr.setTextSize(1);
         spr.setTextDatum(TC_DATUM);
         
@@ -480,7 +485,7 @@ void SwitchUI::drawTemperatureState(){
 
         String txt = (String)((int) w->temperature())+"°";
         int16_t wd = spr.textWidth(txt);
-        spr.setCursor((barWidth - wd)/2, 15);  
+        spr.setCursor((barWidth - wd)/2 + 2, 0);  
         spr.print(txt);
         spr.unloadFont();
     }
@@ -513,7 +518,8 @@ void SwitchUI::drawTemperatureState(){
     spr.unloadFont();
 #endif*/
 
-    spr.pushSprite(406, 00);    
+    spr.pushSprite(406, 15); 
+    spr.deleteSprite();    
 }
 
 void SwitchUI::internalTemperatureChanged(float tmp){
@@ -615,26 +621,6 @@ void SwitchUI::redrawAll(){
     drawConnectionState();
     drawInternalState();
     drawTemperatureState(); 
-
-    /** fake data **/
-    spr.setColorDepth(16);
-    spr.setSwapBytes(true);
-    drawBmp(pageDefName(), 406, 00, 480-406, 184, true);
-    
-    drawBmpAlpha("/03d.IST", 0, 0, 45, 45, (74 - 45) / 2, 48);
-    spr.loadFont("RCL42");
-    spr.setTextSize(1);
-    spr.setTextDatum(TC_DATUM);
-    
-    spr.setTextColor(TFT_BLACK, TFT_WHITE);
-
-    String txt = (String)((int) 24)+"°";
-    int16_t wd = spr.textWidth(txt);
-    spr.setCursor((74 - wd)/2, 15);  
-    spr.print(txt);
-    spr.unloadFont();
-
-    spr.pushSprite(406, 00);
 }
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
@@ -709,9 +695,13 @@ void SwitchUI::handleButtonPress(Button* btn){
         state.currentPage = LIGHT_LEVEL_PAGE;
 
         Serial.printf("Draw Alpha %d\n", state.currentPage);
+
+        spr.setColorDepth(16);
+        spr.createSprite(98, 184);
+        spr.setSwapBytes(true);
         drawLightLevelBack();
         spr.pushSprite(lightLevelX, lightLevelY);
-
+        spr.deleteSprite();
         Serial.println("Done Alpha");
     } else {
         this->pressRoutine(btn->id, btn->activeState());
