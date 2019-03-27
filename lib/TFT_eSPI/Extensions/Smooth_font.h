@@ -4,7 +4,7 @@
  public:
 
   // These are for the new antialiased fonts
-  void     loadFont(String fontName);
+  void     loadFont(String fontName, int8_t xSpacing=0);
   void     unloadFont( void );
   bool     getUnicodeIndex(uint16_t unicode, uint16_t *index);
 
@@ -32,6 +32,7 @@
   } fontMetrics;
 
 fontMetrics gFont = { 0, 0, 0, 0, 0, 0, 0 };
+int8_t xSpacing;
 
   // These are for the metrics for each individual glyph (so we don't need to seek this in file and waste time)
   uint16_t* gUnicode = NULL;  //UTF-16 code, the codes are searched so do not need to be sequential
