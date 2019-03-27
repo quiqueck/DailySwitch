@@ -71,7 +71,7 @@ Weather::Weather(std::string keyIn, SwitchUI* uiIn){
     wtimer = timerBegin(1, 80, true);
 
     timerAttachInterrupt(wtimer, &onWeatherTimer, true);
-    timerAlarmWrite(wtimer, MINUTE(1), true);
+    timerAlarmWrite(wtimer, MINUTE(30), true);
     timerAlarmEnable(wtimer);
 
     lastUpdateCall = millis();
@@ -84,11 +84,12 @@ void Weather::startWiFi(){
     Serial.print("Connecting to ");
     Serial.println(ssid);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);    
+    WiFi.begin(ssid, password);     
 }
 
 void Weather::stopWiFi(){
-    Serial.println("Turnin off WiFi.");
+    Serial.println("Turnin off WiFi.");    
+    WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
 }
 
@@ -116,14 +117,18 @@ std::string Weather::icon() const{
     return std::string("/") + icon + ".IST";                
 }
 
+HTTPClient http;
 void Weather::readData(){
+    bool hasNewData = false;
     //https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22 
-    HTTPClient http;
 
     Serial.printf("\nStarting connection to %s ...\n", host);
+    //Serial.print("freeMemory()="); Serial.print(ESP.getFreeHeap()); Serial.print(" "); Serial.println(ESP.getFreePsram());
     const uint16_t startTime = millis();
-    std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
+    //std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
+    std::string request = std::string("http://192.168.55.51:8080/data.json");
     //Serial.printf("Requesting %s\n", request.c_str());
+    
     http.begin(request.c_str()); //Specify the URL
     int httpCode = http.GET();                                        //Make the request
  
@@ -140,14 +145,8 @@ void Weather::readData(){
                 Serial.print(F("deserializeJson() failed: "));
                 Serial.println(error.c_str());                
             } else {
-                hasData = true;
-                uint16_t wid = doc["weather"][0]["id"];
-                const char* icon = doc["weather"][0]["icon"];
-                float temp = doc["main"]["temp"];
-                float pres = doc["main"]["pressure"];
-                float humi = doc["main"]["humidity"];
-                Serial.printf("Conditions: %d, %s, %f, %f, %f\n", wid, icon, temp, pres, humi);
-                ui->weatherChanged(this);
+                hasNewData = true;
+                hasData = true;                                
             }
             //Serial.println(payload);
         } else {
@@ -157,13 +156,16 @@ void Weather::readData(){
       Serial.println(F("Error on HTTP request"));
     }
  
-    Serial.printf("Finished in %u ms\n", millis() - startTime);
+    Serial.printf("Finished in %lu ms\n", millis() - startTime);
     http.end(); //Free the resources
+    //Serial.print("freeMemory()="); Serial.print(ESP.getFreeHeap()); Serial.print(" "); Serial.println(ESP.getFreePsram());
+
+    if (hasNewData){
+        ui->weatherChanged(this);
+    }
 }
 
 void Weather::update(){
-    return;
-
     lastUpdateCall = millis();
     if (state == WeatherUpdateState::IDLE || state == WeatherUpdateState::INIT) {
         Serial.println("Updating Weather Info...\n");
