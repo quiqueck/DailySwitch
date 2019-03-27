@@ -1,6 +1,7 @@
 #ifndef __SPRITE_H__
 #define __SPRITE_H__
 #include <TFT_eSPI.h>
+#include "NopSerial.h"
 
 
 struct AlphaCol{

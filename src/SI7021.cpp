@@ -56,7 +56,7 @@ uint16_t const SI7021::readShort(uint8_t reg) {
 bool SI7021::begin(){
     Wire.begin(IC2_DAT, IC2_CLK, IC2_FREQUENCY);
     uint8_t res = readByte(0xE7);
-    //Serial.printf("Temp Init: %02x\n", );
+    //Console.printf("Temp Init: %02x\n", );
     return res == 0x3a;
 }
 
@@ -75,13 +75,13 @@ bool SI7021::update(unsigned long ms_interval){
     const unsigned long now = millis();
     const unsigned long delta = now - last;
     if ((readState & 0xF0) == 0) { 
-        //Serial.print(F("Environment Sensor Idle for "));
-        //Serial.printf("%dms (interv:%dms)\n", delta, ms_interval);
+        //Console.print(F("Environment Sensor Idle for "));
+        //Console.printf("%dms (interv:%dms)\n", delta, ms_interval);
         if (delta > ms_interval) {
             readState = SI7021::ReadState::StartRequestTemp;                       
         }
     } else if (readState == SI7021::ReadState::StartRequestTemp) {
-        //Serial.println(F("Requesting Temperature"));
+        //Console.println(F("Requesting Temperature"));
         Wire.beginTransmission(addr);
         Wire.write((uint8_t)CMD_TEMPERATURE);
         Wire.endTransmission();
@@ -90,12 +90,12 @@ bool SI7021::update(unsigned long ms_interval){
         readState = SI7021::ReadState::RequestedTemp;
     } else if (readState == SI7021::ReadState::RequestedTemp) {
         if (delta > REQUEST_TMP_DELAY + _TRANSACTION_TIMEOUT) {  
-            Serial.println(F("Failed to read Temp."));
-            //Serial.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY + _TRANSACTION_TIMEOUT);
+            Console.println(F("Failed to read Temp."));
+            //Console.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY + _TRANSACTION_TIMEOUT);
             readState = SI7021::ReadState::StartRequestHum;
         } else if (delta > REQUEST_TMP_DELAY) { 
-            //Serial.println(F("Try to read Temp.")); 
-            //Serial.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY);
+            //Console.println(F("Try to read Temp.")); 
+            //Console.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY);
             if (Wire.requestFrom(addr, 2) == 2) { 
                 value.hi = Wire.read();
                 value.lo = Wire.read();
@@ -106,7 +106,7 @@ bool SI7021::update(unsigned long ms_interval){
             }
         }
     } else if (readState == SI7021::ReadState::StartRequestHum) {
-        //Serial.println(F("Requesting Humidity"));
+        //Console.println(F("Requesting Humidity"));
         Wire.beginTransmission(addr);
         Wire.write((uint8_t)CMD_HUMIDITY);
         Wire.endTransmission();
@@ -115,12 +115,12 @@ bool SI7021::update(unsigned long ms_interval){
         readState = SI7021::ReadState::RequestedHum;
     } else if (readState == SI7021::ReadState::RequestedHum) {
         if (delta > REQUEST_HUM_DELAY + _TRANSACTION_TIMEOUT) {  
-            Serial.println(F("Failed to read Hum."));
-            //Serial.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY + _TRANSACTION_TIMEOUT);
+            Console.println(F("Failed to read Hum."));
+            //Console.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY + _TRANSACTION_TIMEOUT);
             readState = SI7021::ReadState::StartRequestTemp;            
         } else if (delta > REQUEST_HUM_DELAY) {  
-            //Serial.println(F("Try to read Hum."));  
-            //Serial.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY);                   
+            //Console.println(F("Try to read Hum."));  
+            //Console.printf("    %dms (interv:%dms)\n", delta, REQUEST_TMP_DELAY);                   
             if (Wire.requestFrom(addr, 2) == 2) { 
                 value.hi = Wire.read();
                 value.lo = Wire.read();

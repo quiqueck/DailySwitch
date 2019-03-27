@@ -6,6 +6,8 @@
 #include <SPI.h>
 #include <SD.h>
 #include "ESP32Setup.h"
+#include "NopSerial.h"
+#include "esp_pm.h"
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
@@ -82,8 +84,8 @@ portMUX_TYPE btMux = portMUX_INITIALIZER_UNLOCKED;
 void setup()
 {
     Serial.begin(115200);
-    Serial.println(F("Starting Daily Switch"));
-    
+    Console.println(F("Starting Daily Switch"));
+
     //pinMode(LED,OUTPUT);
     //pinMode(SDCARD_CS, OUTPUT);
     //digitalWrite(SDCARD_CS, HIGH);
@@ -113,16 +115,16 @@ void setup()
 
     #ifdef SI7021_DRIVER
     if (!envSensor.begin()){
-        Serial.println(F("Failed to init Environment Sensor"));
+        Console.println(F("Failed to init Environment Sensor"));
     }
     #endif
 
     #ifdef BH1750_DRIVER    
         #ifndef SI7021_DRIVER
-            Serial.println(F("Init IC2"));
+            Console.println(F("Init IC2"));
             Wire.begin(IC2_DAT, IC2_CLK, IC2_FREQUENCY);
         #endif
-        Serial.println(F("Light Sensor"));
+        Console.println(F("Light Sensor"));
         lightMeter.begin();
     #endif
 
@@ -133,7 +135,7 @@ void setup()
 
     #ifdef WEATHER
         if (!Weather::begin(ui)){        
-            Serial.println("Could not initialize Weather API.");
+            Console.println("Could not initialize Weather API.");
         }
     #endif
 }
@@ -162,7 +164,7 @@ void loop()
     }
 
     if (triggerCalibration) {
-        Serial.println(F("Starting Calibration..."));
+        Console.println(F("Starting Calibration..."));
         SleepTimer::global()->invalidate();
         SleepTimer::global()->stop();
         ui->startTouchCalibration();
@@ -184,9 +186,9 @@ void loop()
         #ifdef BH1750_DRIVER        
             //long start = micros();
             const float lux = lightMeter.readLightLevel();
-            //Serial.print("Light: ");
-            //Serial.print(lux);
-            //Serial.printf(" lx in %dms\n", (micros()-start)/1000);
+            //Console.print("Light: ");
+            //Console.print(lux);
+            //Console.printf(" lx in %dms\n", (micros()-start)/1000);
             ui->luxChanged(lux);
         #endif
         }
@@ -212,24 +214,24 @@ void loop()
         microseconds += sampling_period_us;
     }
     /* Print the results of the sampling according to time */
-    //Serial.println("Data:");
+    //Console.println("Data:");
     //PrintVector(vReal, samples, SCL_TIME);
     FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);	/* Weigh data */
-    //Serial.println("Weighed data:");
+    //Console.println("Weighed data:");
     //PrintVector(vReal, samples, SCL_TIME);
     FFT.Compute(vReal, vImag, samples, FFT_FORWARD); /* Compute FFT */
-    //Serial.println("Computed Real values:");
+    //Console.println("Computed Real values:");
     //PrintVector(vReal, samples, SCL_INDEX);
-    //Serial.println("Computed Imaginary values:");
+    //Console.println("Computed Imaginary values:");
     //PrintVector(vImag, samples, SCL_INDEX);
     FFT.ComplexToMagnitude(vReal, vImag, samples); /* Compute magnitudes */
     double x = FFT.MajorPeak(vReal, samples, samplingFrequency);
-    Serial.println("Computed magnitudes:");
+    Console.println("Computed magnitudes:");
     
     PrintVector(vReal, (samples >> 1), SCL_FREQUENCY, x);
 
     
-    Serial.println(x, 6); //Print out what frequency is the most dominant.
+    Console.println(x, 6); //Print out what frequency is the most dominant.
     #endif
 }
 
@@ -252,33 +254,33 @@ void loop()
             abscissa = ((i * 1.0 * samplingFrequency) / samples);
         break;
         }
-        Serial.print(abscissa, 6);
+        Console.print(abscissa, 6);
         if(scaleType==SCL_FREQUENCY)
-        Serial.print("Hz");
-        Serial.print(" ");
-        Serial.print(vData[i], 4);
+        Console.print("Hz");
+        Console.print(" ");
+        Console.print(vData[i], 4);
 
         if (scaleType==SCL_FREQUENCY){
             int v = (int)((vData[i]/100)*480);
             ui->tft.fillRect(20 + i*7, 10, 7, v, TFT_WHITE);
             ui->tft.fillRect(20 + i*7, 10 + v, 7, 480, TFT_BLACK);
             
-            Serial.print(" ");
-            Serial.print(v, 4);
+            Console.print(" ");
+            Console.print(v, 4);
         }
-        Serial.println();
+        Console.println();
     }
-    Serial.println();
+    Console.println();
     }
 #endif
 
 void touchEvent(){
     static int ct = 0;
-    Serial.printf("TOUCH event %d\n", ct++);
+    Console.printf("TOUCH event %d\n", ct++);
 }
 
 void buttonEvent(uint8_t id, uint8_t state){
-    Serial.printf("Sending %d, %d\n", id, state);
+    Console.printf("Sending %d, %d\n", id, state);
     dbss->sendNotification(id, (DailyBluetoothSwitchServer::DBSNotificationStates)state);
 }
 

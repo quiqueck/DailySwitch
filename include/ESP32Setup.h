@@ -2,6 +2,7 @@
 
 #include <analogWrite.h>
 
+//#define DEBUG_LOG
 //#define HEADLESS
 //#define SI7021_DRIVER  //Temperature/Humidity
 //#define BH1750_DRIVER  //LightMeter

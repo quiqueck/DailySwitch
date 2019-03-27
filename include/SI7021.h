@@ -2,6 +2,7 @@
 #define __SI7021_H__
 #include <Arduino.h>
 #include <cmath>
+#include "NopSerial.h"
 
 
 class SI7021 {

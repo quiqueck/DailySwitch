@@ -2,6 +2,7 @@
 #define __WEATHER_H__
 #include <Arduino.h>
 #include "WeatherKey.h"
+#include "NopSerial.h"
 
 #define WEATHER
 

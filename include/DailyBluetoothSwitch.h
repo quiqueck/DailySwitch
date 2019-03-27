@@ -7,6 +7,7 @@
 #include <HardwareSerial.h>
 #include <BLE2902.h>
 #include <functional>
+#include "NopSerial.h"
 
 #define SERVICE_UUID        "0818c2dd-1276-4105-9e65-0d10c8e27e35"
 #define CHARACTERISTIC_UUID "3e989a75-3437-471e-a50a-20a838afcce7"

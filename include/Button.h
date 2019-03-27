@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <cmath>
 #include "DailyBluetoothSwitch.h"
+#include "NopSerial.h"
 
 enum ButtonType :uint8_t {SWITCH=0, PAGE=1, SELECT=2};
 

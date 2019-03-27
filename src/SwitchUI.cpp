@@ -46,7 +46,7 @@ void SwitchUI::drawBmp(std::string filename) {
 
     if (!bmpFS)
     {
-        Serial.printf("File not found '%s'\n", filename.c_str());
+        Console.printf("File not found '%s'\n", filename.c_str());
         return;
     }
 
@@ -55,7 +55,7 @@ void SwitchUI::drawBmp(std::string filename) {
     uint32_t startTime = millis();
     w = read16(bmpFS);
     h = read16(bmpFS);
-    //Serial.printf("%dx%d\n", w, h);
+    //Console.printf("%dx%d\n", w, h);
     uint16_t y = 0;
     tft.setSwapBytes(false);  
 
@@ -71,8 +71,8 @@ void SwitchUI::drawBmp(std::string filename) {
         // y is decremented as the BMP image is drawn bottom up
         tft.pushImage(0, y++, w, 1, (uint16_t*)lineBuffer);
     }
-    Serial.printf("Loaded %s in ", filename.c_str()); Serial.print(millis() - startTime);
-    Serial.println(" ms");
+    Console.printf("Loaded %s in ", filename.c_str()); Console.print(millis() - startTime);
+    Console.println(" ms");
     
     bmpFS.close();
 }
@@ -119,7 +119,7 @@ void SwitchUI::drawBmp(std::string filename, const class Button* bt){
 }
 
 void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite, int16_t offX, int16_t offY) {
-    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
+    //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
     if (toSprite){
         if (offX < 0) {
             wd += offX;
@@ -145,7 +145,7 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
 
     if (!bmpFS)
     {
-        Serial.printf("File not found '%s'\n", filename.c_str());
+        Console.printf("File not found '%s'\n", filename.c_str());
         return;
     }
 
@@ -187,16 +187,16 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
             else tft.pushImage(x+offX, (y++) + offY, wd, 1, (uint16_t*)lineBuffer);
         }
     }
-    Serial.printf("Loaded %s in ", filename.c_str());  Serial.print(millis() - startTime);
-    Serial.println(" ms");
+    Console.printf("Loaded %s in ", filename.c_str());  Console.print(millis() - startTime);
+    Console.println(" ms");
     
     bmpFS.close();
-    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
+    //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
 }
 
 
 void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, int16_t offX, int16_t offY) {
-    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
+    //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
     if (offX < 0) {
         wd += offX;
         x -= offX;
@@ -217,7 +217,7 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
 
     if (!bmpFS)
     {
-        Serial.printf("File not found '%s'\n", filename.c_str());
+        Console.printf("File not found '%s'\n", filename.c_str());
         return;
     }
 
@@ -253,11 +253,11 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
             spr.pushImageAlpha(offX, row + offY, wd, 1, (AlphaCol*)lineBuffer);
         }
     }
-    Serial.printf("Loaded %s in ", filename.c_str());  Serial.print(millis() - startTime);
-    Serial.println(" ms");
+    Console.printf("Loaded %s in ", filename.c_str());  Console.print(millis() - startTime);
+    Console.println(" ms");
     
     bmpFS.close();
-    //Serial.print("freeMemory()="); Serial.println(ESP.getFreeHeap());
+    //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
 }
 
 
@@ -292,7 +292,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
 
     if (!defFS)
     {
-        Serial.printf("File not found '%s'\n", filename);
+        Console.printf("File not found '%s'\n", filename);
         return;
     }
 
@@ -306,7 +306,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
     lightLevelY = read16(defFS);
     lightLevelW = read16(defFS); //lightLevel Width
     lightLevelH = read16(defFS); //lightLevel Height
-    Serial.printf("Counts: %d, %d\n", buttonCount, pageCount);
+    Console.printf("Counts: %d, %d\n", buttonCount, pageCount);
 
     char pageName[3];
     pageName[2] = 0;
@@ -317,7 +317,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
         }
         std::string s(pageName);
         this->pages.push_back(s);
-        Serial.printf("Page %d = %s\n", i, pageName);
+        Console.printf("Page %d = %s\n", i, pageName);
     }
 
     DefInput def;
@@ -355,16 +355,16 @@ void SwitchUI::ReadDefinitions(const char *filename) {
                 )
             );
         }
-        Serial.printf("Button %d = %d - %d, %s\n", i, def.page, def.id, def.name);
+        Console.printf("Button %d = %d - %d, %s\n", i, def.page, def.id, def.name);
     }
-    Serial.printf("Loaded %s in ", filename);  Serial.print(millis() - startTime);
-    Serial.println(" ms");
+    Console.printf("Loaded %s in ", filename);  Console.print(millis() - startTime);
+    Console.println(" ms");
     
     defFS.close();
 }
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(mySprite(&tft)){
-    Serial.printf("Resolution: %dx%d\n", tft.width(), tft.height());
+    Console.printf("Resolution: %dx%d\n", tft.width(), tft.height());
 
     temperature = NAN;
     humidity = NAN;
@@ -385,9 +385,9 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
     
     ReadDefinitions("/DEF.BTS");
     
-    //Serial.printf("Initialized Buttons %d\n", buttons.size());
+    //Console.printf("Initialized Buttons %d\n", buttons.size());
     
-    Serial.println("Initializing TFT...");
+    Console.println("Initializing TFT...");
     
     tft.init();
     tft.setRotation(3);
@@ -395,18 +395,18 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
 
     this->prepareTouchCalibration(force_calibration);
 
-    Serial.println("Done Initializing TFT");    
+    Console.println("Done Initializing TFT");    
 }
 
 void SwitchUI::prepareTouchCalibration(bool force_calibration){
 #ifndef HEADLESS
-    Serial.println("Read Calibration Data");   
+    Console.println("Read Calibration Data");   
     // check if calibration file exists
     bool calDataOK = false;
     calDataOK = FileSystem::global()->readCalibrationFile((char *)calibrationData);
 
     if (calDataOK && !force_calibration) {
-        Serial.println("Starting Touch");
+        Console.println("Starting Touch");
 
         // calibration data valid
         tft.setTouch(calibrationData);
@@ -421,7 +421,7 @@ void SwitchUI::prepareTouchCalibration(bool force_calibration){
 
 void SwitchUI::startTouchCalibration(){
 #ifndef HEADLESS
-  Serial.println("Prepare Calibrating Touch");
+  Console.println("Prepare Calibrating Touch");
 
   tft.fillScreen(TFT_WHITE);
   tft.setCursor(20, 0, 2);
@@ -429,10 +429,10 @@ void SwitchUI::startTouchCalibration(){
   tft.loadFont("RCR12");
   tft.println("calibration run");
   
-  Serial.println("Calibrating Touch");
+  Console.println("Calibrating Touch");
   tft.calibrateTouch(calibrationData, TFT_WHITE, TFT_RED, 15);
 
-  Serial.println("Writing Calibration");
+  Console.println("Writing Calibration");
   FileSystem::global()->writeCalibrationFile((const char*)calibrationData);  
 
   this->redrawAll();
@@ -450,7 +450,7 @@ void SwitchUI::setBrightness(uint8_t val){
 }
 
 void SwitchUI::temperaturChanged(float tmp){
-    //Serial.printf("Update Temperature %f => %f (%f)\n", temperature, tmp, fabs(temperature-tmp));
+    //Console.printf("Update Temperature %f => %f (%f)\n", temperature, tmp, fabs(temperature-tmp));
 
     if (
         (isnan(temperature) && !isnan(tmp)) ||
@@ -523,7 +523,7 @@ void SwitchUI::drawTemperatureState(){
 }
 
 void SwitchUI::internalTemperatureChanged(float tmp){
-    //Serial.printf("Update internal Temperature %f => %f (%f)\n", temperatureIntern, tmp, fabs(temperatureIntern-tmp));
+    //Console.printf("Update internal Temperature %f => %f (%f)\n", temperatureIntern, tmp, fabs(temperatureIntern-tmp));
 
     if (
         (isnan(temperatureIntern) && !isnan(tmp)) ||
@@ -536,7 +536,7 @@ void SwitchUI::internalTemperatureChanged(float tmp){
 }
 
 void SwitchUI::humidityChanged(float hum){
-    //Serial.printf("Update Humidity %f => %f (%f)\n", humidity, hum, fabs(humidity-hum));
+    //Console.printf("Update Humidity %f => %f (%f)\n", humidity, hum, fabs(humidity-hum));
     if (
         (isnan(humidity) && !isnan(hum)) ||
         (!isnan(humidity) && isnan(hum)) ||
@@ -548,7 +548,7 @@ void SwitchUI::humidityChanged(float hum){
 }
 
 void SwitchUI::luxChanged(float l){
-    //Serial.printf("Update Lux %f => %f (%f)\n", lux, l, fabs(lux-l));
+    //Console.printf("Update Lux %f => %f (%f)\n", lux, l, fabs(lux-l));
     if (
         (isnan(lux) && !isnan(l)) ||
         (!isnan(lux) && isnan(l)) ||
@@ -606,7 +606,7 @@ void SwitchUI::drawConnectionState(){
 
 void SwitchUI::redrawAll(){
     state.dirty = false;
-    Serial.printf("Redraw all %d\n", buttons.size());
+    Console.printf("Redraw all %d\n", buttons.size());
     if (state.wasConnected == true) {
         drawBmp(pageDefName());
         for (auto button : buttons) {
@@ -617,7 +617,7 @@ void SwitchUI::redrawAll(){
     } else
         drawBmp(pageDisName());
 
-    //Serial.printf("Redraw state\n", buttons.size());
+    //Console.printf("Redraw state\n", buttons.size());
     drawConnectionState();
     drawInternalState();
     drawTemperatureState(); 
@@ -629,7 +629,7 @@ Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
             if (button->page() == state.currentPage) {            
                 return button;        
             } else {
-                Serial.printf("%s: for %d, on %d\n", button->name, button->page(), state.currentPage);
+                Console.printf("%s: for %d, on %d\n", button->name, button->page(), state.currentPage);
             }
         }
     } 
@@ -666,7 +666,7 @@ void SwitchUI::handleLightLevelSelect(Button* btn){
     }
 
     if (selectButton) {
-        Serial.println("Finish LightLevelSelect...");
+        Console.println("Finish LightLevelSelect...");
         if (btn!=NULL) {
             this->pressRoutine(selectButton->id, btn->activeState());
         }
@@ -684,7 +684,7 @@ void SwitchUI::handleButtonPress(Button* btn){
         state.pushPage = btn->id;
         redrawAll();
     } else if (btn->type() == ButtonType::SELECT){
-        Serial.printf("Undo Button %X\n", pressedButton);
+        Console.printf("Undo Button %X\n", pressedButton);
         //makes sure the button does NOT trigger yet  
         if (pressedButton)
             drawBmp(pressedButton);      
@@ -694,7 +694,7 @@ void SwitchUI::handleButtonPress(Button* btn){
         state.pushPage = state.currentPage;
         state.currentPage = LIGHT_LEVEL_PAGE;
 
-        Serial.printf("Draw Alpha %d\n", state.currentPage);
+        Console.printf("Draw Alpha %d\n", state.currentPage);
 
         spr.setColorDepth(16);
         spr.createSprite(98, 184);
@@ -702,7 +702,7 @@ void SwitchUI::handleButtonPress(Button* btn){
         drawLightLevelBack();
         spr.pushSprite(lightLevelX, lightLevelY);
         spr.deleteSprite();
-        Serial.println("Done Alpha");
+        Console.println("Done Alpha");
     } else {
         this->pressRoutine(btn->id, btn->activeState());
     }
@@ -737,7 +737,7 @@ void SwitchUI::scanTouch(){
         if (!state.touchDown) touchRoutine(true);
         state.touchDown = true;
         lastDown = micros();
-        Serial.printf("touch %d, %d\n", x, y);
+        Console.printf("touch %d, %d\n", x, y);
         
         //ignore touches when we reactivate
         if (SleepTimer::global()->noBacklight()) {

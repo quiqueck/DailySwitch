@@ -42,7 +42,7 @@ DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
 }
 
 void DailyBluetoothSwitchServer::startAdvertising() {
-    Serial.println("Started Advertising...");
+    Console.println("Started Advertising...");
     BLEDevice::startAdvertising();
 }
 
@@ -55,7 +55,7 @@ void DailyBluetoothSwitchServer::sendNotification(uint16_t id, DBSNotificationSt
 }
 
 void DailyBluetoothSwitchServer::onConnect(BLEServer* pServer) {
-    Serial.printf("Connected %x\n", pServer);
+    Console.printf("Connected %x\n", pServer);
     BLEClientConnected = true;
     characteristic->setValue("{\"id\":-1, \"state\":0}");
     characteristic->notify();
@@ -65,7 +65,7 @@ void DailyBluetoothSwitchServer::onConnect(BLEServer* pServer) {
 };
 
 void DailyBluetoothSwitchServer::onDisconnect(BLEServer* pServer) {
-    Serial.printf("Disconnected %x\n", pServer);
+    Console.printf("Disconnected %x\n", pServer);
     BLEClientConnected = false;
     if (whenConnected){
         whenConnected(false);

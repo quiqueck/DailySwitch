@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include <functional>
+#include "NopSerial.h"
 
 class TouchPin {
     public:

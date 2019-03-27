@@ -81,15 +81,15 @@ void Weather::startWiFi(){
     if (state != WeatherUpdateState::IDLE && state != WeatherUpdateState::INIT)
         return;
 
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
+    Console.print("Connecting to ");
+    Console.println(ssid);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);     
 }
 
 void Weather::stopWiFi(){
-    Serial.println("Turnin off WiFi.");    
     WiFi.disconnect();
+    Console.println("Turnin off WiFi."); 
     WiFi.mode(WIFI_OFF);
 }
 
@@ -122,18 +122,18 @@ void Weather::readData(){
     bool hasNewData = false;
     //https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22 
 
-    Serial.printf("\nStarting connection to %s ...\n", host);
-    //Serial.print("freeMemory()="); Serial.print(ESP.getFreeHeap()); Serial.print(" "); Serial.println(ESP.getFreePsram());
+    Console.printf("\n  Starting connection to %s ...\n", host);
+    //Console.print("freeMemory()="); Console.print(ESP.getFreeHeap()); Console.print(" "); Console.println(ESP.getFreePsram());
     const uint16_t startTime = millis();
     std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
     //std::string request = std::string("http://192.168.55.51:8080/data.json");
-    //Serial.printf("Requesting %s\n", request.c_str());
+    //Console.printf("  Requesting %s\n", request.c_str());
     
     http.begin(request.c_str()); //Specify the URL
     int httpCode = http.GET();                                        //Make the request
  
     if (httpCode > 0) { //Check for the returning code 
-        // Serial.println(httpCode);
+        // Console.println(httpCode);
         if (httpCode == 200){
             String payload = http.getString();
 
@@ -142,23 +142,23 @@ void Weather::readData(){
 
             // Test if parsing succeeds.
             if (error) {
-                Serial.print(F("deserializeJson() failed: "));
-                Serial.println(error.c_str());                
+                Console.print(F("  deserializeJson() failed: "));
+                Console.println(error.c_str());                
             } else {
                 hasNewData = true;
                 hasData = true;                                
             }
-            //Serial.println(payload);
+            //Console.println(payload);
         } else {
-           Serial.printf("HTTP request returned %d\n", httpCode); 
+           Console.printf("  HTTP request returned %d\n", httpCode); 
         }
     } else {
-      Serial.println(F("Error on HTTP request"));
+      Console.println(F("  Error on HTTP request"));
     }
  
-    Serial.printf("Finished in %lu ms\n", millis() - startTime);
+    Console.printf("  Finished in %lu ms\n", millis() - startTime);
     http.end(); //Free the resources
-    //Serial.print("freeMemory()="); Serial.print(ESP.getFreeHeap()); Serial.print(" "); Serial.println(ESP.getFreePsram());
+    //Console.print("freeMemory()="); Console.print(ESP.getFreeHeap()); Console.print(" "); Console.println(ESP.getFreePsram());
 
     if (hasNewData){
         ui->weatherChanged(this);
@@ -168,31 +168,31 @@ void Weather::readData(){
 void Weather::update(){
     lastUpdateCall = millis();
     if (state == WeatherUpdateState::IDLE || state == WeatherUpdateState::INIT) {
-        Serial.println("Updating Weather Info...\n");
+        Console.println("Updating Weather Info...\n");
         startWiFi();  
         state = WeatherUpdateState::CONNECTING;  
         wifiRetries = 100;                      
     } if (state == WeatherUpdateState::CONNECTING){
         if (wifiRetries > 0) {
             wifiRetries--;            
-            Serial.print(".");
+            Console.print(".");
             if (WiFi.status() == WL_CONNECTED){        
                state = WeatherUpdateState::CONNECTED;
             }
         } else {
-            Serial.println("");
-            Serial.println("  WiFi connection failed");
+            Console.println("");
+            Console.println("  WiFi connection failed");
             stopWiFi();
             state = WeatherUpdateState::IDLE;
         }
     } if (state == WeatherUpdateState::CONNECTED){
-        Serial.println("");
-        Serial.print("  WiFi connected as ");        
-        Serial.println(WiFi.localIP());
+        Console.println("");
+        Console.print("  WiFi connected as ");        
+        Console.println(WiFi.localIP());
         state = WeatherUpdateState::LOADING;
         readData();
         state = WeatherUpdateState::IDLE;
-        Serial.print("  Weather Updated finished\n");  
+        Console.print("  Weather Updated finished\n");  
         stopWiFi();
     }
 }

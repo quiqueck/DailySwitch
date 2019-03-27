@@ -1,6 +1,7 @@
 #ifndef __SLEEP_TIMER_H__
 #define __SLEEP_TIMER_H__
 #include <Arduino.h>
+#include "NopSerial.h"
 
 class SleepTimer {
     public:

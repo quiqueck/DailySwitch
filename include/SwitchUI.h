@@ -7,6 +7,7 @@
 #include <cmath>
 #include "Sprite.h"
 #include "DailyBluetoothSwitch.h"
+#include "NopSerial.h"
 
 #define TOUCH_BOX_SIZE 86
 #define LIGHT_LEVEL_PAGE 0xF
