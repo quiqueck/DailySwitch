@@ -576,7 +576,7 @@ void SwitchUI::drawInternalState(){
     if (temperatureIntern > 0 && temperatureIntern<500)
         tft.drawString((String)((int)temperatureIntern)+"°", 400, 307, 2); 
     else
-        tft.drawString("ERR", 400, 306, 2); 
+        tft.drawString("--", 400, 306, 2); 
 #endif
     tft.unloadFont();
 }
