@@ -257,3 +257,25 @@ let buttons = [
 ];
 
 writeButtons(buttons, lightLevel, ['MM', 'PL'], 'DEF.BTS');
+
+convert ('../weather-icons/weather-28.png', '01d.IST', true);
+convert ('../weather-icons/weather-32.png', '01n.IST', true);
+convert ('../weather-icons/weather-4.png',  '02d.IST', true);
+convert ('../weather-icons/weather-11.png', '02n.IST', true);
+convert ('../weather-icons/weather-0.png',  '03d.IST', true);
+convert ('../weather-icons/weather-0.png',  '03n.IST', true);
+convert ('../weather-icons/weather-33.png', '04d.IST', true);
+convert ('../weather-icons/weather-33.png', '04n.IST', true);
+convert ('../weather-icons/weather-36.png', '09d.IST', true);
+convert ('../weather-icons/weather-36.png', '09n.IST', true);
+convert ('../weather-icons/weather-10.png', '10d.IST', true);
+convert ('../weather-icons/weather-20.png', '10n.IST', true);
+convert ('../weather-icons/weather-7.png',  '11d.IST', true);
+convert ('../weather-icons/weather-7.png',  '11n.IST', true);
+convert ('../weather-icons/weather-16.png', '13d.IST', true);
+convert ('../weather-icons/weather-19.png', '13n.IST', true);
+convert ('../weather-icons/weather-27.png', '50d.IST', true);
+convert ('../weather-icons/weather-27.png', '50n.IST', true);
+
+convert ('../weather-icons/weather-35.png', '781d.IST', true);
+convert ('../weather-icons/weather-35.png', '781n.IST', true);
