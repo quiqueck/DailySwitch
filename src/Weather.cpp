@@ -1,7 +1,8 @@
 #include "Weather.h"
 #include "SwitchUI.h"
 #include <WiFi.h>
-#include <WiFiClient.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include <soc/rtc.h>
 
 const char* ssid     = WIFI_NAME;
@@ -59,12 +60,13 @@ void IRAM_ATTR onWeatherTimer() {
   portEXIT_CRITICAL_ISR(&wtimerMux);
 }
 
-WiFiClient client;
-
 Weather* Weather::_global = NULL;
+StaticJsonDocument<1000> doc;
+
 Weather::Weather(std::string keyIn, SwitchUI* uiIn){
     key = keyIn;
     ui = uiIn;
+    hasData = false;
     state = WeatherUpdateState::INIT;    
     wtimer = timerBegin(1, 80, true);
 
@@ -92,41 +94,42 @@ void Weather::stopWiFi(){
 
 void Weather::readData(){
     //https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22 
-    
-    //client.setCACert(ca_cert);
+    HTTPClient http;
+
     Serial.printf("\nStarting connection to %s ...\n", host);
-    if (!client.connect(host, 80))
-        Serial.println("Connection failed!");
-    else {
-        Serial.println("Connected to server!");
-        // Make a HTTP request:
-        Serial.printf("GET /%s/weather?lat=%f&lon=%f&appid=%s&units=metric HTTP/1.1\r\n", basePath, LAT, LON, key.c_str());
-        client.printf("GET /%s/weather?lat=%f&lon=%f&appid=%s&units=metric HTTP/1.1\r\n", basePath, LAT, LON, key.c_str());
-        client.printf("Host: %s\r\n", host);
-        client.printf("Connection: close\r\n\r\n");        
+    const uint16_t startTime = millis();
+    std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
+    //Serial.printf("Requesting %s\n", request.c_str());
+    http.begin(request.c_str()); //Specify the URL
+    int httpCode = http.GET();                                        //Make the request
+ 
+    if (httpCode > 0) { //Check for the returning code 
+        
+        // Serial.println(httpCode);
+        if (httpCode == 200){
+            String payload = http.getString();
 
-        Serial.println(">> Read Headers");
-        unsigned long timeout = millis();
-        while (client.available() == 0) {
-            if (millis() - timeout > 30000) {
-                Serial.println(">>> Client Timeout !");
-                client.stop();
+            // Deserialize the JSON document
+            DeserializationError error = deserializeJson(doc, payload);
+
+            // Test if parsing succeeds.
+            if (error) {
+                Serial.print(F("deserializeJson() failed: "));
+                Serial.println(error.c_str());
                 return;
+            } else {
+                hasData = true;
             }
+            //Serial.println(payload);
+        } else {
+           Serial.printf("HTTP request returned %d\n", httpCode); 
         }
-
-        // Read all the lines of the reply from server and print them to Serial
-        Serial.println(">> Read Data");
-        while(client.available()) {
-            String line = client.readStringUntil('\r');
-            Serial.print(line);
-        }
-
-        Serial.println();
-        Serial.println("closing connection");
-
-        client.stop();
+    } else {
+      Serial.println(F("Error on HTTP request"));
     }
+ 
+    Serial.printf("Finished in %u ms\n", millis() - startTime);
+    http.end(); //Free the resources
 }
 
 void Weather::update(){

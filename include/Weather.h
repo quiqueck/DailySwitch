@@ -31,5 +31,6 @@ class Weather {
         WeatherUpdateState state;
         uint16_t lastUpdateCall;
         uint8_t wifiRetries;
+        bool hasData;
 };
 #endif
