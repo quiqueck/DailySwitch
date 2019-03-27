@@ -11,19 +11,25 @@ class Weather {
             if (Weather::_global == NULL){
                 Weather::_global = new Weather(key, uiIn);
             }
-            return Weather::_global->ready();
+            return true;
         }
-        static inline Weather* global() { return Weather::_global; }
-        inline bool ready() const { return status==0; }
+        static inline Weather* global() { return Weather::_global; }        
 
         void tick();
         void update();
+    protected:
+        void startWiFi();
+        void stopWiFi();
+        void readData();
     private:
+        enum WeatherUpdateState : uint8_t {IDLE=0, CONNECTING=1, CONNECTED=2, LOADING=3, INIT=4};
         Weather(std::string key, class SwitchUI* ui);
 
         std::string key;
         class SwitchUI* ui;
         static Weather* _global;
-        uint8_t status;
+        WeatherUpdateState state;
+        uint16_t lastUpdateCall;
+        uint8_t wifiRetries;
 };
 #endif
