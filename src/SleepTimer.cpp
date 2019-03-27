@@ -54,7 +54,7 @@ void SleepTimer::setState(uint8_t s) {
         } 
         if (state >= noBacklightAt){
             rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
-            timerSetDivider(timer, 240);
+            //timerSetDivider(timer, 240);
         } 
         if (state >= reduceBrightnessAt) {
             ui->setBrightness(0xFF);
@@ -67,7 +67,7 @@ void SleepTimer::setState(uint8_t s) {
         Console.print(F("Turn off Backlight \n"));
         ui->setBrightness(0x00);
         rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
-        timerSetDivider(timer, 80);
+        //timerSetDivider(timer, 80);
         ui->returnToNormalState();
     } else if (s>=displayOffAt && state<displayOffAt) {
         Console.print(F("Turn off Display \n"));
