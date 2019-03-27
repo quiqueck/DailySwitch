@@ -1,4 +1,5 @@
 //#define MIC //enable microfone
+
 #include <Arduino.h>
 #include <FunctionalInterrupt.h>
 #include <pins_arduino.h>
@@ -10,6 +11,9 @@
 #include "SwitchUI.h"
 #include "SleepTimer.h"
 #include "FileSystem.h"
+
+#include "Weather.h"
+
 
 #include "DailyBluetoothSwitch.h"
 
@@ -113,8 +117,7 @@ void setup()
     }
     #endif
 
-    #ifdef BH1750_DRIVER
-    
+    #ifdef BH1750_DRIVER    
         #ifndef SI7021_DRIVER
             Serial.println(F("Init IC2"));
             Wire.begin(IC2_DAT, IC2_CLK, IC2_FREQUENCY);
@@ -128,7 +131,11 @@ void setup()
     sampling_period_us = round(1000000*(1.0/samplingFrequency));
     #endif
 
-    
+    #ifdef WEATHER
+        if (!Weather::begin(ui)){        
+            Serial.println("Could not initialize Weather API.");
+        }
+    #endif
 }
 
 volatile bool triggerStateUpdate = true;
@@ -165,6 +172,9 @@ void loop()
 
 	t1->read();
     ui->scanTouch();
+#ifdef WEATHER
+    Weather::global()->tick();    
+#endif
     SleepTimer::global()->tick();
 
     if (!SleepTimer::global()->noBacklight()) {

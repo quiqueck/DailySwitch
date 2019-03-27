@@ -45,7 +45,7 @@ const uint8_t SleepTimer::reduceBrightnessAt = 3;
 const uint8_t SleepTimer::noBacklightAt = 6;
 const uint8_t SleepTimer::displayOffAt = 9;
 
-unsigned long lastStateChange = 0;
+//unsigned long lastStateChange = 0;
 void SleepTimer::setState(uint8_t s) {
     
     if (s==0){       
@@ -80,7 +80,7 @@ void SleepTimer::setState(uint8_t s) {
     }
 
     //Serial.printf("state: %d => %d (%dms)\n", state, s, millis()-lastStateChange);    
-    lastStateChange = millis();
+    //lastStateChange = millis();
     state = s;
 }
 
