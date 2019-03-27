@@ -125,8 +125,8 @@ void Weather::readData(){
     Serial.printf("\nStarting connection to %s ...\n", host);
     //Serial.print("freeMemory()="); Serial.print(ESP.getFreeHeap()); Serial.print(" "); Serial.println(ESP.getFreePsram());
     const uint16_t startTime = millis();
-    //std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
-    std::string request = std::string("http://192.168.55.51:8080/data.json");
+    std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
+    //std::string request = std::string("http://192.168.55.51:8080/data.json");
     //Serial.printf("Requesting %s\n", request.c_str());
     
     http.begin(request.c_str()); //Specify the URL
