@@ -1,4 +1,5 @@
 # Name,   Type, SubType, Offset,  Size, Flags
-nvs,      data, nvs,     0x9000,  0x5000,
-eeprom,   data, 0x99,    0xe000,  0x2000,
-factory,  app,  factory, 0x10000, 0x3F0000,
+nvs,      data, nvs,     0x009000,  0x005000,
+phy_init, data, phy,     0x00E000,  0x002000,
+factory,  app,  factory, 0x010000,  0x3E0000,
+eeprom,   data, 0x99,    0x3F0000,  0x001000,
