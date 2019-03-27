@@ -156,18 +156,19 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
     const uint16_t eSz = sizeof(uint16_t);
     bmpFS.seek(seekOffset + y * (w*eSz) + x * eSz);    
 
-    if (wd*hg*eSz<60000) {
-        uint16_t* lineBuffer = (uint16_t*)malloc(eSz*wd*hg);
-        uint8_t* tptr = (uint8_t*)lineBuffer;
+    
+    uint16_t* buffer = (uint16_t*)malloc(eSz*wd*hg);
+    if (buffer) {
+        uint8_t* tptr = (uint8_t*)buffer;
         for (row = 0; row < hg; row++) {
             bmpFS.read((uint8_t*)tptr, wd*eSz);
             tptr += wd*eSz;
             bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);            
         }   
         if (toSprite) {
-            spr.pushImage(offX, offY, wd, hg, (uint16_t*)lineBuffer);     
-        } else tft.pushImage(x+offX, y+offY, wd, hg, (uint16_t*)lineBuffer);
-        free(lineBuffer);
+            spr.pushImage(offX, offY, wd, hg, (uint16_t*)buffer);     
+        } else tft.pushImage(x+offX, y+offY, wd, hg, (uint16_t*)buffer);
+        free(buffer);
     } else {
         uint16_t lineBuffer[wd];
         
@@ -226,16 +227,16 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
     const uint16_t eSz = sizeof(AlphaCol);
     bmpFS.seek(seekOffset + y * (w*eSz) + x * eSz);    
 
-    if (wd*hg*eSz<60000) {
-        AlphaCol* lineBuffer = (AlphaCol*)malloc(eSz*wd*hg);
-        uint8_t* tptr = (uint8_t*)lineBuffer;
+    AlphaCol* buffer = (AlphaCol*)malloc(eSz*wd*hg);
+    if (buffer) {
+        uint8_t* tptr = (uint8_t*)buffer;
         for (row = 0; row < hg; row++) {
             bmpFS.read((uint8_t*)tptr, wd*eSz);
             tptr += wd*eSz;
             bmpFS.seek((w-wd)*eSz, fs::SeekMode::SeekCur);            
         }   
-        spr.pushImageAlpha(offX, offY, wd, hg, (AlphaCol*)lineBuffer);             
-        free(lineBuffer);
+        spr.pushImageAlpha(offX, offY, wd, hg, (AlphaCol*)buffer);             
+        free(buffer);
     } else {
         AlphaCol lineBuffer[wd];
         for (row = 0; row < hg; row++) {
