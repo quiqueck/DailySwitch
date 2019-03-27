@@ -73,6 +73,9 @@ uint16_t TFT_eSPI::getTouchRawZ(void){
 ** Description:             read validated position. Return false if not pressed. 
 ***************************************************************************************/
 #define _RAWERR 10 // Deadband error allowed in successive position samples
+#define ZBUFFER_SIZE 100
+uint16_t zBuffer[ZBUFFER_SIZE];
+uint16_t zBufferStart = 0;
 uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
   uint16_t x_tmp, y_tmp, x_tmp2, y_tmp2;
 
@@ -86,12 +89,21 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
     delay(1);
   }
 
-    //Serial.print("Z = ");Serial.println(z1);
+  zBuffer[zBufferStart] = z1;
+  if (z1<3*threshold)
+    zBufferStart = (zBufferStart+1)%ZBUFFER_SIZE;
+  float tres = 0;
+  for (int i=0; i<ZBUFFER_SIZE; i++){
+    tres += zBuffer[i]/(float)ZBUFFER_SIZE;
+  }
+  //Serial.print("Z = ");Serial.print(z1);
+  //   Serial.print(" "); Serial.println(tres);
 
-  if (z1 <= threshold) return false;
+  if (/*z1 <= threshold &&*/ z1<=1.2*tres) {
+    return false;
+  }
     
-  getTouchRaw(&x_tmp,&y_tmp);
-
+  getTouchRaw(&x_tmp,&y_tmp); 
     //Serial.print("Sample 1 x,y = "); Serial.print(x_tmp);Serial.print(",");Serial.print(y_tmp);
     //Serial.print(", Z = ");Serial.println(z1);
 
@@ -117,7 +129,7 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
 ** Function name:           getTouch
 ** Description:             read callibrated position. Return false if not pressed. 
 ***************************************************************************************/
-#define Z_THRESHOLD 350 // Touch pressure threshold for validating touches
+#define Z_THRESHOLD 900 // Touch pressure threshold for validating touches
 uint8_t TFT_eSPI::getTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
   uint16_t x_tmp, y_tmp;
   
