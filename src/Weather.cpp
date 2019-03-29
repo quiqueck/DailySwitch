@@ -95,7 +95,7 @@ void Weather::startWiFi(){
 }
 
 void Weather::stopWiFi(){
-    return;
+    
     Console.println("Turnin off WiFi."); 
     //WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);   
     WiFi.disconnect();    
