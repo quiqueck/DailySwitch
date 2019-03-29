@@ -160,6 +160,31 @@ void stateChanged(bool state){
     //portEXIT_CRITICAL_ISR(&btMux);
 }
 
+bool logMem(){
+    static unsigned long lastPrint = 0;
+    static uint32_t lastMem = 0;
+    static uint32_t refMem = 0;
+    static uint32_t printCount = 0;
+    if (millis()-lastPrint > 1000){
+        //ui->weatherChanged(Weather::global());
+        uint32_t heap = ESP.getFreeHeap();    
+        printCount ++;
+        if (printCount == 13) {
+            refMem = heap;
+        }
+        if (printCount % 95 == 0) {
+            //SleepTimer::global()->invalidate();
+        }
+        //Serial.printf("heap=%d, psram=%d\n", ESP.getFreeHeap(), ESP.getFreePsram());     
+        
+        Serial.printf("%04d: heap=%d (%d  %d)\n", printCount, heap, refMem==0?-1:(heap-refMem), heap-lastMem);    
+        lastMem =  heap;    
+        lastPrint = millis();
+    }
+
+    return printCount>5;
+}
+
 void loop()
 {
     //turn off LED
@@ -187,8 +212,11 @@ void loop()
 	t1->read();
     ui->scanTouch();
 #ifdef WEATHER
-    Weather::global()->tick();    
+    //if (logMem()){
+       Weather::global()->tick();           
+    //}
 #endif
+
     SleepTimer::global()->tick();
 
     if (!SleepTimer::global()->noBacklight()) {

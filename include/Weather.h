@@ -27,9 +27,9 @@ class Weather {
     protected:
         void startWiFi();
         void stopWiFi();
-        void readData();
+        bool readData();
     private:
-        enum WeatherUpdateState : uint8_t {IDLE=0, CONNECTING=1, CONNECTED=2, LOADING=3, INIT=4};
+        enum WeatherUpdateState : uint8_t {IDLE=0, CONNECTING=1, CONNECTED=2, LOADING=3, INIT=4, UIUPDATE=5};
         Weather(std::string key, class SwitchUI* ui);
 
         std::string key;

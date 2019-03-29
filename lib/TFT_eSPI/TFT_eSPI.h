@@ -50,7 +50,7 @@
 // that does not exist (this is a temporary fix to stop ESP32 reboot)
 #ifdef SMOOTH_FONT
   #ifndef LOAD_GLCD
-    #define LOAD_GLCD
+    //#define LOAD_GLCD
   #endif
 #endif
 

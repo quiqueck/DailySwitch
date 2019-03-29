@@ -8,7 +8,8 @@ const fs = require('fs'),
       ON_SECONDARY=2,
       SWITCH=0, 
       PAGE=1, 
-      SELECT=2;
+      SELECT=2,
+      SPECIAL_FUNCTION=3;
 
 function convert(inFile, outFile, alpha){
     fs.createReadStream(inFile)
@@ -131,7 +132,7 @@ convert ('LightLevel.png', 'LL.IST', true);
 convert ('LightLevelDown.png', 'LLD.IST', true);
 convert ('LightLevelDis.png', 'LLX.IST', true);
 
-let lightLevel = {x:(406-98)/2, y:(320-184)/2, w:98, h:184};
+let lightLevel = {x:(406-77)/2, y:(320-171)/2, w:77, h:171};
 
 let buttons = [
     {l:22, t:28, w:70, h:52, 
@@ -239,17 +240,17 @@ let buttons = [
     },
     
     
-    {l:lightLevel.x+14 + 5, t:lightLevel.y+14 + 5, w:70 - 10, h:52 - 10, 
+    {l:lightLevel.x + 5, t:lightLevel.y + 5, w:lightLevel.w - 10, h:62-10, 
         type:SWITCH, id:0xff, state:ON_SECONDARY,
         name:"LL_FULL",
         page:0xF
     },
-    {l:lightLevel.x+14 + 5, t:lightLevel.y+67 + 5, w:70 - 10, h:52 - 10 , 
+    {l:lightLevel.x + 5, t:lightLevel.y + 62 + 5, w:lightLevel.w - 10, h:49-10, 
         type:SWITCH, id:0xff, state:ON,
         name:"LL_MID",
         page:0xF
     },
-    {l:lightLevel.x+14 + 5, t:lightLevel.y+118 + 5, w:70 -10 , h:52 - 10, 
+    {l:lightLevel.x + 5, t:lightLevel.y + 109 + 5, w:lightLevel.w - 10, h:(lightLevel.h - 109)-10, 
         type:SWITCH, id:0xff, state:OFF,
         name:"LL_OFF",
         page:0xF

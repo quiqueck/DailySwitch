@@ -69,6 +69,10 @@ void* TFT_eSprite::createSprite(int16_t w, int16_t h, uint8_t frames)
   _ypivot = h/2;
 
   _img8   = (uint8_t*) callocSprite(w, h, frames);
+  if (_img8==NULL){
+    uint32_t heap = ESP.getFreeHeap();
+    log_e("No Memory for Sprite. heap=%d, need=%d", heap, (w*h+1)*sizeof(uint16_t));
+  }
   _img8_1 = _img8;
   _img8_2 = _img8;
   _img    = (uint16_t*) _img8;
@@ -105,12 +109,11 @@ void* TFT_eSprite::callocSprite(int16_t w, int16_t h, uint8_t frames)
 
   if (_bpp == 16)
   {
-
 #if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
     if ( psramFound() ) ptr8 = ( uint8_t*) ps_calloc(w * h + 1, sizeof(uint16_t));
     else
 #endif
-    ptr8 = ( uint8_t*) calloc(w * h + 1, sizeof(uint16_t));
+    ptr8 = ( uint8_t*) calloc(w * h + 1, sizeof(uint16_t));    
   }
 
   else if (_bpp == 8)

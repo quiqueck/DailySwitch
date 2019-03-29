@@ -65,9 +65,9 @@ class SwitchUI{
     public:
         TFT_eSPI tft;
     private:
-        mySprite spr;
         const std::function<void(uint8_t, uint8_t)> pressRoutine;        
-        const std::function<void(bool)> touchRoutine;        
+        const std::function<void(bool)> touchRoutine; 
+        mySprite spr;       
 
         struct {
                 bool blockUntilRelease  : 1; 

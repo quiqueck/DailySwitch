@@ -50,8 +50,7 @@ void SwitchUI::drawBmp(std::string filename) {
         return;
     }
 
-    uint16_t w, h, row, col;
-    uint8_t  r, g, b;
+    uint16_t w, h, row;
     uint32_t startTime = millis();
     w = read16(bmpFS);
     h = read16(bmpFS);
@@ -60,7 +59,7 @@ void SwitchUI::drawBmp(std::string filename) {
     tft.setSwapBytes(false);  
 
     const uint16_t seekOffset = 4;    
-    const uint16_t eSz = sizeof(uint16_t);
+    //const uint16_t eSz = sizeof(uint16_t);
     bmpFS.seek(seekOffset);
     uint16_t lineBuffer[w];
 
@@ -80,7 +79,7 @@ void SwitchUI::drawBmp(std::string filename) {
 void SwitchUI::drawLightLevelBack(){
     drawBmp(pageDefName(), lightLevelX, lightLevelY, lightLevelW, lightLevelH, true);
     if (selectButton)
-        drawBmp(selectButton, true, selectButton->l - lightLevelX, selectButton->t - lightLevelY); 
+        drawBmp(selectButton, true, selectButton->l() - lightLevelX, selectButton->t() - lightLevelY); 
 
     drawBmpAlpha("/LL.IST", 0, 0, lightLevelW, lightLevelH, 0, 0);
 }
@@ -97,25 +96,25 @@ void SwitchUI::drawBmp(const class Button* bt, bool toSprite, uint16_t offX, uin
             
             drawBmpAlpha(
                     "/LLD.IST", 
-                    bt->l - lightLevelX, 
-                    bt->t - lightLevelY, 
+                    bt->l() - lightLevelX, 
+                    bt->t() - lightLevelY, 
                     bt->w(), 
                     bt->h(),
                     0, 
                     0
             );         
-            spr.pushSprite(bt->l, bt->t);
+            spr.pushSprite(bt->l(), bt->t());
             spr.deleteSprite();
     } else if (state.wasConnected) {
         std::string file = bt->isPressed() ? pageSelName() : pageDefName();
-        drawBmp(file, bt->l, bt->t, bt->w(), bt->h(), toSprite, offX, offY);        
+        drawBmp(file, bt->l(), bt->t(), bt->w(), bt->h(), toSprite, offX, offY);        
     } else {
-        drawBmp(pageDisName(), bt->l, bt->t, bt->w(), bt->h(), toSprite, offX, offY);
+        drawBmp(pageDisName(), bt->l(), bt->t(), bt->w(), bt->h(), toSprite, offX, offY);
     }
 }
 
 void SwitchUI::drawBmp(std::string filename, const class Button* bt){
-    drawBmp(filename, bt->l, bt->t, bt->w(), bt->h());
+    drawBmp(filename, bt->l(), bt->t(), bt->w(), bt->h());
 }
 
 void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite, int16_t offX, int16_t offY) {
@@ -149,12 +148,11 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
         return;
     }
 
-    uint16_t w, h, row, col;
-    uint8_t  r, g, b;
+    uint16_t w, row;
 
     uint32_t startTime = millis();
     w = read16(bmpFS);
-    h = read16(bmpFS);
+    read16(bmpFS); //height
 
     tft.setSwapBytes(false);    
     const uint16_t seekOffset = 4;    
@@ -221,12 +219,11 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
         return;
     }
 
-    uint16_t w, h, row, col;
-    uint8_t  r, g, b;
+    uint16_t w, row;
 
     uint32_t startTime = millis();
     w = read16(bmpFS);
-    h = read16(bmpFS);
+    read16(bmpFS); //height
 
     tft.setSwapBytes(false);    
     const uint16_t seekOffset = 4;    
@@ -323,9 +320,9 @@ void SwitchUI::ReadDefinitions(const char *filename) {
     DefInput def;
     for (int i=0; i<buttonCount; i++){
         defFS.read((uint8_t*)&def, sizeof(DefInput));
+        Button* b;
         if (def.state == def.altState) {
-            this->addButton(
-                new Button(
+            b = new Button(
                     def.id, 
                     (DailyBluetoothSwitchServer::DBSNotificationStates)def.state, 
                     def.name,           
@@ -336,11 +333,9 @@ void SwitchUI::ReadDefinitions(const char *filename) {
                     rgb(220, 0, 0),
                     def.page,
                     (ButtonType)def.type
-                )
-            );
+                );
         } else {
-            this->addButton(
-                new Button(
+            b = new Button(
                     def.id, 
                     (DailyBluetoothSwitchServer::DBSNotificationStates)def.state, 
                     (DailyBluetoothSwitchServer::DBSNotificationStates)def.altState, 
@@ -352,10 +347,13 @@ void SwitchUI::ReadDefinitions(const char *filename) {
                     rgb(0, 0, 220),
                     def.page,
                     (ButtonType)def.type
-                )
-            );
+                );
         }
+        this->addButton(b);
         Console.printf("Button %d = %d - %d, %s\n", i, def.page, def.id, def.name);
+        Console.printf("       type=%d, %d; page=%d, %d; state=%d, %d\n", def.type, b->type(), def.page, b->page(), def.state, b->state());
+        Console.printf("       l=%d, %d; r=%d, %d\n", def.l, b->l(), def.r, b->r()); 
+        Console.printf("       t=%d, %d; b=%d, %d\n", def.t, b->t(), def.b, b->b()); 
     }
     Console.printf("Loaded %s in ", filename);  Console.print(millis() - startTime);
     Console.println(" ms");
@@ -629,7 +627,7 @@ Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
             if (button->page() == state.currentPage) {            
                 return button;        
             } else {
-                Console.printf("%s: for %d, on %d\n", button->name, button->page(), state.currentPage);
+                Console.printf("Button: for %d, on %d\n", button->page(), state.currentPage);
             }
         }
     } 
@@ -677,6 +675,7 @@ void SwitchUI::handleLightLevelSelect(Button* btn){
 }
 
 void SwitchUI::handleButtonPress(Button* btn){
+    //Serial.printf("btn: %d, %d, %d, %d", btn->id, btn->type(), btn->page(), btn->hasAlternative());
     if (btn->page() == LIGHT_LEVEL_PAGE){
         handleLightLevelSelect(btn);
     } else if (btn->type() == ButtonType::PAGE){
@@ -684,7 +683,7 @@ void SwitchUI::handleButtonPress(Button* btn){
         state.pushPage = btn->id;
         redrawAll();
     } else if (btn->type() == ButtonType::SELECT){
-        Console.printf("Undo Button %X\n", pressedButton);
+        Console.printf("Undo Button %X\n", (unsigned int)pressedButton);
         //makes sure the button does NOT trigger yet  
         if (pressedButton)
             drawBmp(pressedButton);      
@@ -697,12 +696,11 @@ void SwitchUI::handleButtonPress(Button* btn){
         Console.printf("Draw Alpha %d\n", state.currentPage);
 
         spr.setColorDepth(16);
-        spr.createSprite(98, 184);
+        spr.createSprite(lightLevelW, lightLevelH);
         spr.setSwapBytes(true);
         drawLightLevelBack();
         spr.pushSprite(lightLevelX, lightLevelY);
         spr.deleteSprite();
-        Console.println("Done Alpha");
     } else {
         this->pressRoutine(btn->id, btn->activeState());
     }

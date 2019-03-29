@@ -62,6 +62,7 @@ void IRAM_ATTR onWeatherTimer() {
 
 Weather* Weather::_global = NULL;
 StaticJsonDocument<1000> doc;
+HTTPClient http;
 
 Weather::Weather(std::string keyIn, SwitchUI* uiIn){
     key = keyIn;
@@ -75,23 +76,28 @@ Weather::Weather(std::string keyIn, SwitchUI* uiIn){
     timerAlarmEnable(wtimer);
 
     lastUpdateCall = millis();
+    http.setReuse(true);
 }
 
 void Weather::startWiFi(){  
     if (state != WeatherUpdateState::IDLE && state != WeatherUpdateState::INIT)
         return;
 
+    if (WiFi.status() == WL_CONNECTED){
+        return;
+    }
     Console.print("Connecting to ");
     Console.println(ssid);
     WiFi.mode(WIFI_STA);
     WiFi.setSleep(true);
     WiFi.begin(ssid, password);   
-    WiFi.setTxPower(WIFI_POWER_19_5dBm);  
+    //WiFi.setTxPower(WIFI_POWER_19_5dBm);  
 }
 
 void Weather::stopWiFi(){
+    return;
     Console.println("Turnin off WiFi."); 
-    WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);   
+    //WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);   
     WiFi.disconnect();    
     WiFi.setSleep(true);
     WiFi.mode(WIFI_OFF);
@@ -121,8 +127,8 @@ std::string Weather::icon() const{
     return std::string("/") + icon + ".IST";                
 }
 
-HTTPClient http;
-void Weather::readData(){
+
+bool Weather::readData(){
     bool hasNewData = false;
     //https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22 
 
@@ -164,15 +170,13 @@ void Weather::readData(){
     http.end(); //Free the resources
     //Console.print("freeMemory()="); Console.print(ESP.getFreeHeap()); Console.print(" "); Console.println(ESP.getFreePsram());
 
-    if (hasNewData){
-        ui->weatherChanged(this);
-    }
+    return hasNewData;
 }
 
 void Weather::update(){
     lastUpdateCall = millis();
     if (state == WeatherUpdateState::IDLE || state == WeatherUpdateState::INIT) {
-        Console.println("Updating Weather Info...\n");
+        Console.println("Updating Weather Info...\n");        
         startWiFi();  
         state = WeatherUpdateState::CONNECTING;  
         wifiRetries = 100;                      
@@ -194,10 +198,15 @@ void Weather::update(){
         Console.print("  WiFi connected as ");        
         Console.println(WiFi.localIP());
         state = WeatherUpdateState::LOADING;
-        readData();
-        state = WeatherUpdateState::IDLE;
+        bool hasNew = readData();
+        //deffer ui updates to preven heap from fragmenting
+        state = hasNew?WeatherUpdateState::UIUPDATE:WeatherUpdateState::IDLE;
         Console.print("  Weather Updated finished\n");  
         stopWiFi();
+    } if (state == WeatherUpdateState::UIUPDATE){
+        Console.print("  Weather sent UI-Update\n");  
+        ui->weatherChanged(this);
+        state = WeatherUpdateState::IDLE;
     }
 }
 
@@ -211,7 +220,12 @@ void Weather::tick(){
         update();
     }  else if (state != WeatherUpdateState::IDLE) {
         //delay about 500ms
-         if (millis() - lastUpdateCall > 500){
+        unsigned long waittime = 500;
+
+        if (state == WeatherUpdateState::UIUPDATE)
+            waittime = 2000;
+        
+         if (millis() - lastUpdateCall > waittime){
             update();
          }
     }

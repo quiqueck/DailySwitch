@@ -5,22 +5,43 @@
 #include "DailyBluetoothSwitch.h"
 #include "NopSerial.h"
 
-enum ButtonType :uint8_t {SWITCH=0, PAGE=1, SELECT=2};
+enum ButtonType :uint8_t {SWITCH=0, PAGE=1, SELECT=2, SPECIAL_FUNCTION=3};
 
 class Button {
-    public:        
-        const int16_t l;
-        const int16_t t;
-        const int16_t b; 
-        const int16_t r;
+    public: 
+        inline uint16_t  l() const{
+            return l_state >> 3;
+        }
+        inline uint16_t r() const{
+            return r_altState >> 3;
+        } 
+
+        inline uint16_t  t() const{
+            return ((l_state >> 2) & 1) | (tHi << 1);
+        }
+        inline uint16_t b() const{
+            return ((r_altState >> 2) & 1) | (bHi << 1);
+        }     
+
+        inline DailyBluetoothSwitchServer::DBSNotificationStates state() const {
+            return (DailyBluetoothSwitchServer::DBSNotificationStates) (l_state & 0x03);
+        }
+
+        inline DailyBluetoothSwitchServer::DBSNotificationStates altState() const {
+            return (DailyBluetoothSwitchServer::DBSNotificationStates) (r_altState & 0x03);
+        }
+            
         const uint16_t col;
         const uint8_t id;
-        const DailyBluetoothSwitchServer::DBSNotificationStates state;
-        const DailyBluetoothSwitchServer::DBSNotificationStates altState;
-        const char* name;
+            //const DailyBluetoothSwitchServer::DBSNotificationStates state;
+            //const DailyBluetoothSwitchServer::DBSNotificationStates altState;            
 
     private:
-        union {
+        const uint16_t l_state;
+        const uint16_t r_altState;
+        const uint8_t tHi;
+        const uint8_t bHi; 
+        /*union {
             struct{
                 bool pressed         : 1; 
                 bool hasAlt          : 1; 
@@ -28,25 +49,33 @@ class Button {
                 uint8_t page         : 4;                
             };
             uint8_t val;
-        } currentState;
+        } currentState;*/
+
+        
+        uint8_t currentState;
 
     public:
-        inline uint8_t page() const { return currentState.page;}
-        inline ButtonType type() const { return currentState.type;}
-        inline int16_t w() const { return r-l;}
-        inline int16_t h() const { return b-t;}
-        inline bool const inside(int16_t x, int16_t y){ return std::signbit((l-x) & (x-r) & (t-y) & (y-b));}
+
+        inline ButtonType type() const{
+            return (ButtonType)((currentState >> 2) & 0x03);
+        }
+        inline uint8_t page() const{
+            return ((currentState >> 4) & 0x0F);
+        }
+        inline int16_t w() const { return r()-l();}
+        inline int16_t h() const { return b()-t();}
+        inline bool const inside(int16_t x, int16_t y){ return std::signbit((l()-x) & (x-r()) & (t()-y) & (y-b()));}
 
         inline void draw(class SwitchUI* ui) const {draw(ui, col);}
         void draw(class SwitchUI* ui, uint16_t oCol) const;
-        inline bool isPressed() const { return currentState.pressed; }
-        inline void toogle() {currentState.pressed = !currentState.pressed;}
-        inline void down() {currentState.pressed = true;}
-        inline void up() {currentState.pressed = false;}
-        inline bool hasAlternative() const { return currentState.hasAlt; }
+        inline bool isPressed() const { return (currentState & 0x01); }
+        inline void toogle() { currentState ^= 0x01; }
+        inline void down() {currentState |= 0x01;}
+        inline void up() {currentState &= 0xFE;}
+        inline bool hasAlternative() const { return (currentState & 0x02); }
         inline DailyBluetoothSwitchServer::DBSNotificationStates  activeState() const { 
-            if (!currentState.hasAlt) return state;            
-            return currentState.pressed?altState:state; 
+            if (!hasAlternative()) return state();            
+            return isPressed()?altState():state(); 
         }
 
         Button(
@@ -60,21 +89,19 @@ class Button {
             uint16_t colIn,
             uint8_t page=0,
             ButtonType type=ButtonType::SWITCH):
-                l(lIn),
-                r(rIn),
-                t(tIn),
-                b(bIn),
                 col(colIn), 
-                id(id), 
-                state(state),
-                altState(state),
-                name(name)
+                id(id),
+                l_state((lIn<<3) | (state & 0x03) | ((tIn&1)<<2)),
+                r_altState((rIn<<3) | (state & 0x03) | ((bIn&1)<<2)),
+                tHi(tIn>>1),
+                bHi(bIn>>1)                
         {
             this->ui = ui;
-            currentState.hasAlt = false;
+            currentState = 0x00 | ((type & 0x03) << 2) | ((page & 0x0F) << 4);
+            /*currentState.hasAlt = false;
             currentState.pressed = false;
             currentState.type = type;
-            currentState.page = page;
+            currentState.page = page;*/
         }
 
         Button(
@@ -89,21 +116,19 @@ class Button {
             uint16_t colIn,
             uint8_t page=0,
             ButtonType type=ButtonType::SWITCH):
-                l(lIn),
-                r(rIn),
-                t(tIn),
-                b(bIn),
                 col(colIn), 
-                id(id), 
-                state(state), 
-                altState(altState),
-                name(name)
+                id(id),
+                l_state((lIn <<3) | (state & 0x03) | ((tIn&1)<<2)),
+                r_altState((rIn<<3) | (altState & 0x03) | ((bIn&1)<<2)),
+                tHi(tIn >> 1),
+                bHi(bIn >> 1)                
         {
             this->ui = ui;
-            currentState.hasAlt = true;
+            currentState = 0x02 | ((type & 0x03) << 0x02) | ((page & 0x0F) << 4);
+            /*currentState.hasAlt = true;
             currentState.pressed = false;
             currentState.type = type;
-            currentState.page = page;
+            currentState.page = page;*/
         }
     private:
         class SwitchUI* ui;
