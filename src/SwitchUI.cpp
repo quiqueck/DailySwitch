@@ -708,8 +708,8 @@ void SwitchUI::handleButtonPress(Button* btn){
 }
 
 void SwitchUI::scanTouch(){
-    tft.loadFont("RCL12");
-    tft.setTextColor(TFT_BLACK, TFT_WHITE);
+    /*tft.loadFont("RCL12");
+    tft.setTextColor(TFT_BLACK, TFT_WHITE);*/
     uint16_t x, y;
     unsigned long delta = micros() - lastDown;
     

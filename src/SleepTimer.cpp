@@ -47,7 +47,9 @@ const uint8_t SleepTimer::displayOffAt = 9;
 
 //unsigned long lastStateChange = 0;
 void SleepTimer::setState(uint8_t s) {
-    
+#ifdef TEST_TOUCH
+    return;
+#endif
     if (s==0){       
         if (state >= displayOffAt){
             ui->displayOn();

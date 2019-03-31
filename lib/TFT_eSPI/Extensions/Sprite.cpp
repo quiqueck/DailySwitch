@@ -1672,10 +1672,10 @@ int16_t TFT_eSprite::drawChar(unsigned int uniCode, int x, int y, int font)
   }
 #endif
 
-  int w = width;
+  /*int w = width;
   int pX      = 0;
   int pY      = y;
-  uint8_t line = 0;
+  uint8_t line = 0;*/
 
 #ifdef LOAD_FONT2 // chop out code if we do not need it
   if (font == 2) {
