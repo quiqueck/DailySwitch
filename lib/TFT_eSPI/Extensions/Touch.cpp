@@ -11,27 +11,7 @@
 // See license in root directory.
 
 
-void polyfit(const std::vector<double> &tIn, const std::vector<double> &yIn, std::vector<float> &coeff, int order)
-{
-  assert(tIn.size() == yIn.size());
-	assert(tIn.size() >= order+1);
 
-	// Initialize Vandermonde Matrix
-  Eigen::MatrixXd A = Eigen::MatrixXd::Ones(tIn.size(), order + 1);
-
-  // Convert Datatypes
-	Eigen::VectorXd t = Eigen::VectorXd::Map(&tIn.front(), tIn.size());
-  Eigen::VectorXd y = Eigen::VectorXd::Map(&yIn.front(), yIn.size());
-
-	for (uint8_t j = 1; j < order + 1; ++j) 
-    	A.col(j) = A.col(j - 1).cwiseProduct(t);
-  
-  Eigen::VectorXd coeffs = A.householderQr().solve(y);
-  	
-	coeff.resize(order+1);
-	for (size_t i = 0; i < order+1; i++)
-		coeff[i] = (float)coeffs[i];  
-}
 
 /***************************************************************************************
 ** Function name:           getTouchRaw
@@ -116,7 +96,9 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t *z, uint16_t thr
   
   //Serial.print("Z = ");Serial.print(z1);
   //   Serial.print(" "); Serial.println(threshold);
-
+getTouchRaw(&x_tmp,&y_tmp); 
+String s(String("") + x_tmp + " x " + y_tmp + " x " + z1 + " (" + threshold + ")");
+drawString(s, 50, 50, 2);
   if (z1 <= threshold) {
     return false;
   }
@@ -177,176 +159,67 @@ Serial.printf("------> %04dx%04d\n", x_tmp, y_tmp);
   return valid;
 }
 
+#define PX(__n) (((_width - size - 1) * __n) / (CAPTURE_POINTS_X-1))
+#define PY(__n) (((_height - size - 1) * __n) / (CAPTURE_POINTS_Y-1))
+#define FILL_RECT(___nx, ___ny, ___cl) fillRect(PX(___nx), PY(___ny), size+1, size+1, ___cl);
+#define DRAW_RECT(___nx, ___ny, ___cl) drawRect(PX(___nx), PY(___ny), size+1, size+1, ___cl);
+#define DRAW_LINE(___nx, ___ny, ___cl) drawLine(PX(___nx), PY(___ny)+size, PX(___nx)+size, PY(___ny), ___cl);
+
+#define IDXX(___xx, ___yy) (((___xx)*CAPTURE_POINTS_Y + (___yy))*2)
+#define IDXY(___xx, ___yy) ((((___xx)*CAPTURE_POINTS_Y + (___yy))*2)+1)
+#define VX(___xx, ___yy) values[IDXX(___xx, ___yy)]
+#define VY(___xx, ___yy) values[IDXY(___xx, ___yy)]
+
 /***************************************************************************************
 ** Function name:           convertRawXY
 ** Description:             convert raw touch x,y values to screen coordinates 
 ***************************************************************************************/
 void TFT_eSPI::convertRawXY(uint16_t *x, uint16_t *y)
 {
-  uint16_t x_tmp = *x, y_tmp = *y;
-  float xx, yy;
+  const uint16_t size = 15;
+  const uint8_t CAPTURE_POINTS_X = calibrationXCaptureCount();
+  const uint8_t CAPTURE_POINTS_Y = calibrationYCaptureCount();
+  const uint16_t X = -1*(*x);
+  const uint16_t Y = *y;
+  
+  *x = 10000;
+  *y = 10000;
+  for (int xi=1; xi<CAPTURE_POINTS_X; xi++){
+    for (int yi=1; yi<CAPTURE_POINTS_Y; yi++){
+      uint16_t Ax = -VX(xi-1, yi-1);
+      uint16_t Ay = VY(xi-1, yi-1);
+      uint16_t Bx = -VX(xi-1, yi);
+      uint16_t By = VY(xi-1, yi);
+      Serial.printf("  %dx%d:  %dx%d -- %dx%d      %dx%d %dx%d\n", X, Y, Ax, Ay, Bx, By, IDXX(xi-1, yi-1), IDXY(xi-1, yi-1), xi-1, yi-1);
+      if ((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax)< 0) continue;
+        
 
-  xx=0;
-  for (int i=0; i<calibrationXCaptureCount(); i++){
-    xx += coeffX[i] * powf(x_tmp, i);
-  }
-  yy=0;
-  for (int i=0; i<calibrationYCaptureCount(); i++){
-    yy += coeffY[i] * powf(y_tmp, i);
+      uint16_t Cx = -VX(xi, yi);
+      uint16_t Cy = VY(xi, yi);
+      if ((Cx - Bx) * (Y - By) - (Cy - By) * (X - Bx) < 0) continue;
+
+      uint16_t Dx = -VX(xi, yi-1);
+      uint16_t Dy = VY(xi, yi-1);
+      if ((Dx - Cx) * (Y - Cy) - (Dy - Cy) * (X - Cx) < 0) continue;      
+      if ((Ax - Dx) * (Y - Dy) - (Ay - Dy) * (X - Dx) < 0) continue;
+
+
+    double tAD = (double)(X - Ax) / (Dx - Ax);
+    double tADy = (double)(Ay) + tAD * (Dy - Ay);
+    double tBC = (double)(X - Bx) / (Cx - Bx);
+    double tBCy = (double)(By) + tBC * (Cy - By);
+
+    double px =  
+      *x = PX(xi) + size/2;
+      *y = PY(yi) + size/2;
+
+
+      return;
+    }
   }
   
-  *x = xx;
-  *y = yy;
+  
 }
-
-/***************************************************************************************
-** Function name:           calibrateTouch
-** Description:             generates calibration parameters for touchscreen. 
-***************************************************************************************/
-void TFT_eSPI::calibrateTouchLinear(uint16_t *parameters, uint32_t color_fg, uint32_t color_bg, uint8_t size){
-  const uint8_t SAMPLES = 64;
-  int32_t values[] = {0,0, 0,0, 0,0, 0,0};
-  int32_t zSamples = 0;
-  uint16_t x_tmp, y_tmp, z_tmp;  
-  int32_t zInit = 0;
-
-  //calibrate the initial z-value
-  for (int i=0; i<SAMPLES; i++){
-    zInit += getTouchRawZ();
-  }
-  zInit = (zInit * 1.5) / SAMPLES;
-
-  for(uint8_t i = 0; i<4; i++){
-    fillRect(0, 0, size+1, size+1, color_fg);
-    fillRect(0, _height-size-1, size+1, size+1, color_fg);
-    fillRect(_width-size-1, 0, size+1, size+1, color_fg);
-    fillRect(_width-size-1, _height-size-1, size+1, size+1, color_fg);
-
-    
-    if (i == 5) break; // used to clear the arrows
-
-    // user has to get the chance to release
-    // do before we mark the next rect to give feedback that we are in delay state
-    //if(i>0) 
-    {
-      //wait for release
-      while(validTouch(&x_tmp, &y_tmp, &z_tmp, zInit)){
-        delay(50);
-      }
-
-      drawRect(0, 0, size+1, size+1, color_bg);
-      drawRect(0, _height-size-1, size+1, size+1, color_bg);
-      drawRect(_width-size-1, 0, size+1, size+1, color_bg);
-      drawRect(_width-size-1, _height-size-1, size+1, size+1, color_bg);
-
-      delay(2000);
-    }
-
-    fillRect(0, 0, size+1, size+1, color_bg);
-    fillRect(0, _height-size-1, size+1, size+1, color_bg);
-    fillRect(_width-size-1, 0, size+1, size+1, color_bg);
-    fillRect(_width-size-1, _height-size-1, size+1, size+1, color_bg);
-
-    switch (i) {
-      case 0: // up left
-        drawLine(0, 0, 0, size, color_fg);
-        drawLine(0, 0, size, 0, color_fg);
-        drawLine(0, 0, size , size, color_fg);
-        break;
-      case 1: // bot left
-        drawLine(0, _height-size-1, 0, _height-1, color_fg);
-        drawLine(0, _height-1, size, _height-1, color_fg);
-        drawLine(size, _height-size-1, 0, _height-1 , color_fg);
-        break;
-      case 2: // up right
-        drawLine(_width-size-1, 0, _width-1, 0, color_fg);
-        drawLine(_width-size-1, size, _width-1, 0, color_fg);
-        drawLine(_width-1, size, _width-1, 0, color_fg);
-        break;
-      case 3: // bot right
-        drawLine(_width-size-1, _height-size-1, _width-1, _height-1, color_fg);
-        drawLine(_width-1, _height-1-size, _width-1, _height-1, color_fg);
-        drawLine(_width-1-size, _height-1, _width-1, _height-1, color_fg);
-        break;
-      }    
-
-    for(uint8_t j= 0; j<SAMPLES; j++){
-      // Use a lower detect threshold as corners tend to be less sensitive
-      while(!validTouch(&x_tmp, &y_tmp, &z_tmp, zInit));
-        values[i*2  ] += x_tmp;
-        values[i*2+1] += y_tmp;
-        zSamples += z_tmp;
-      }
-      values[i*2  ] /= SAMPLES;
-      values[i*2+1] /= SAMPLES;
-      delay(50);
-  }
- touchCalibration_zMin = (((zSamples/SAMPLES) >> 2) + zInit) >> 1;  
- 
- float touchCalibration_x0, touchCalibration_x1, touchCalibration_y0, touchCalibration_y1;
-  // from case 0 to case 1, the y value changed. 
-  // If the measured delta of the touch x axis is bigger than the delta of the y axis, the touch and TFT axes are switched.
-  bool touchCalibration_rotate = false;
-  if(abs(values[0]-values[2]) > abs(values[1]-values[3])){
-    touchCalibration_rotate = true;
-    touchCalibration_x0 = (values[1] + values[3])/2; // calc min x
-    touchCalibration_x1 = (values[5] + values[7])/2; // calc max x
-    touchCalibration_y0 = (values[0] + values[4])/2; // calc min y
-    touchCalibration_y1 = (values[2] + values[6])/2; // calc max y
-  } else {
-    touchCalibration_x0 = (values[0] + values[2])/2; // calc min x
-    touchCalibration_x1 = (values[4] + values[6])/2; // calc max x
-    touchCalibration_y0 = (values[1] + values[5])/2; // calc min y
-    touchCalibration_y1 = (values[3] + values[7])/2; // calc max y
-  }
-
-  // in addition, the touch screen axis could be in the opposite direction of the TFT axis
-  bool touchCalibration_invert_x = false;
-  if(touchCalibration_x0 > touchCalibration_x1){
-    values[0]=touchCalibration_x0;
-    touchCalibration_x0 = touchCalibration_x1;
-    touchCalibration_x1 = values[0];
-    touchCalibration_invert_x = true;
-  }
-  bool touchCalibration_invert_y = false;
-  if(touchCalibration_y0 > touchCalibration_y1){
-    values[0]=touchCalibration_y0;
-    touchCalibration_y0 = touchCalibration_y1;
-    touchCalibration_y1 = values[0];
-    touchCalibration_invert_y = true;
-  }
-
-  // pre calculate
-  touchCalibration_x1 -= touchCalibration_x0;
-  touchCalibration_y1 -= touchCalibration_y0;
-
-  if(touchCalibration_x0 == 0) touchCalibration_x0 = 1;
-  if(touchCalibration_x1 == 0) touchCalibration_x1 = 1;
-  if(touchCalibration_y0 == 0) touchCalibration_y0 = 1;
-  if(touchCalibration_y1 == 0) touchCalibration_y1 = 1;
-
-  // export parameters, if pointer valid
-  if (parameters != NULL) {
-    parameters[0] = 2;
-    parameters[1] = 2;
-    *((uint16_t*)(&parameters[2])) = touchCalibration_zMin;
-    uint8_t pos = 4;
-    *((float*)(&parameters[pos])) = touchCalibration_x0;
-    pos += sizeof(float);
-    *((float*)(&parameters[pos])) = touchCalibration_x1;
-    pos += sizeof(float);
-    *((float*)(&parameters[pos])) = touchCalibration_y0;
-    pos += sizeof(float);
-    *((float*)(&parameters[pos])) = touchCalibration_y1;
-    pos += sizeof(float);
-  }
-}
-
-#define PX(__n) (((_width - size - 1) * __n) / (CAPTURE_POINTS_X-1))
-#define PY(__n) (((_height - size - 1) * __n) / (CAPTURE_POINTS_Y-1))
-#define FILL_RECT(___nx, ___ny, ___cl) fillRect(PX(___nx), PY(___ny), size+1, size+1, ___cl);
-#define DRAW_RECT(___nx, ___ny, ___cl) drawRect(PX(___nx), PY(___ny), size+1, size+1, ___cl);
-#define DRAW_LINE(___nx, ___ny, ___cl) drawLine(PX(___nx), PY(___ny)+size, PX(___nx)+size, PY(___ny), ___cl);
 
 void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t color_bg, uint8_t size){
   const uint8_t SAMPLES = 64;
@@ -355,28 +228,17 @@ void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t c
   ;
 
   uint16_t x_tmp, y_tmp, z_tmp;  
-
   int32_t zInit = 0;
   int32_t zSampleAcc = 0;
+  values.resize(CAPTURE_POINTS_X*CAPTURE_POINTS_Y*2); 
 
-  std::vector<double> valuesX, valuesY, posX, posY;
-  valuesX.resize(CAPTURE_POINTS_X); posX.resize(CAPTURE_POINTS_X);
-  for (int i=0; i<CAPTURE_POINTS_X; i++){ 
-    valuesX[i] = 0;
-    posX[i] = PX(i) + size/2;
-  }
-
-  valuesY.resize(CAPTURE_POINTS_Y); posY.resize(CAPTURE_POINTS_Y);
-  for (int i=0; i<CAPTURE_POINTS_Y; i++){ 
-    valuesY[i] = 0;
-    posY[i] = PY(i) + size/2;
-  }
-  
   //calibrate the initial z-value
   for (int i=0; i<SAMPLES; i++){
     zInit += getTouchRawZ();
+    delay(50);
   }
   zInit = (zInit * 1.5) / SAMPLES;
+  Serial.printf("MinZ: %d\n", zInit);
 
   for (uint8_t xi=0; xi<CAPTURE_POINTS_X; xi++){ 
     for (uint8_t yi=0; yi<CAPTURE_POINTS_Y; yi++){ 
@@ -404,8 +266,9 @@ void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t c
       DRAW_LINE(xi, yi, color_fg)
 
 
-      double samplesX = 0;
-      double samplesY = 0;
+      uint32_t samplesX = 0;
+      uint32_t samplesY = 0;
+
       //take calibration samples
       for(uint8_t j= 0; j<SAMPLES; j++){
         // Use a lower detect threshold as corners tend to be less sensitive
@@ -413,61 +276,35 @@ void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t c
           //nop just busy wait
         }
 
-        samplesX += (double)x_tmp / (SAMPLES*CAPTURE_POINTS_Y);
-        samplesY += (double)y_tmp / (SAMPLES*CAPTURE_POINTS_X);
+        samplesX += x_tmp;
+        samplesY += y_tmp;
         zSampleAcc += z_tmp;
       }
-      Serial.printf("%f, %f\n", samplesX, samplesY);
-      valuesX[xi] += samplesX;
-      valuesY[yi] += samplesY;
+      Serial.printf("%dx%d: %d, %d\n", IDXX(xi, yi), IDXY(xi, yi), samplesX / SAMPLES, samplesY / SAMPLES);
+      VX(xi, yi) = samplesX / SAMPLES;
+      VY(xi, yi) = samplesY / SAMPLES;
         
       delay(50);  
     }
   }
 
-  Serial.printf("%d, %d    %d, %d\n", valuesX.size(), posX.size(), valuesY.size(), posY.size());
-  for (int i = 0; i<CAPTURE_POINTS_X; i++){
-    Serial.printf("%f/%f ", valuesX[i], posX[i]);
-  }
-  Serial.println();
-
-  for (int i = 0; i<CAPTURE_POINTS_Y; i++){
-    Serial.printf("%f/%f ", valuesY[i], posY[i]);
-  }
-  Serial.println();
-
-  coeffX.clear();
-  polyfit(valuesX, posX, coeffX, CAPTURE_POINTS_X-1);
-  Serial.print("y=");
-  for (int i = 0; i<CAPTURE_POINTS_X; i++){
-    Serial.printf("%s%f * x^%d", coeffX[i]<0?"":(i>0?"+":""), coeffX[i], i);
-  }
-  Serial.println();
-
-  coeffY.clear();
-  polyfit(valuesY, posY, coeffY, CAPTURE_POINTS_Y-1);
-  Serial.print("y=");
-  for (int i = 0; i<CAPTURE_POINTS_Y; i++){
-    Serial.printf("%s%f * x^%d", coeffY[i]<0?"":(i>0?"+":""), coeffY[i], i);
-  }
-  Serial.println();
-
+Serial.print("Values: ");
+for (int i=0; i<values.size(); i++){
+  Serial.printf("%d ", values[i]);
+}
+Serial.println();
+Serial.print("ZMin: ");
   touchCalibration_zMin = (((zSampleAcc/SAMPLES) / (CAPTURE_POINTS_X*CAPTURE_POINTS_Y)) + zInit) >> 1; 
   Serial.println(touchCalibration_zMin);
 
   if (parameters != NULL) {
-    parameters[0] = calibrationXCaptureCount();
-    parameters[1] = calibrationYCaptureCount();
+    *((uint16_t*)(&parameters[0])) = values.size();
     *((uint16_t*)(&parameters[2])) = touchCalibration_zMin;
     uint8_t pos = 4;
-    for (int i=0; i<CAPTURE_POINTS_X; i++){
-      *((float*)(&parameters[pos])) = coeffX[i];
-      pos += sizeof(float);
-    }
-    for (int i=0; i<CAPTURE_POINTS_Y; i++){
-      *((float*)(&parameters[pos])) = coeffY[i];
-      pos += sizeof(float);
-    }
+    for (int i=0; i<values.size(); i++){
+      *((uint16_t*)(&parameters[pos])) = values[i];
+      pos += sizeof(uint16_t);
+    }  
   }
   //return calibrateTouchLinear(parameters, color_fg, color_bg, size);
 }
@@ -478,33 +315,19 @@ void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t c
 ** Description:             imports calibration parameters for touchscreen. 
 ***************************************************************************************/
 void TFT_eSPI::setTouch(uint8_t *parameters){
-  uint8_t xct = parameters[0];
-  uint8_t yct = parameters[1];
-
+  uint16_t count = *((uint16_t*)(&parameters[0]));
   touchCalibration_zMin = *((uint16_t*)(&parameters[2]));
-  uint8_t pos = 4;
-  coeffX.clear();
-  for (int i=0; i<xct; i++){
-    coeffX.push_back(*((float*)(&parameters[pos])));
-    pos += sizeof(float);
-  }
-  Serial.print("y=");
-  for (int i = 0; i<coeffX.size(); i++){
-    Serial.printf("%s%f * x^%d", coeffX[i]<0?"":(i>0?"+":""), coeffX[i], i);
+
+  values.clear();
+  uint8_t pos =4;
+  for (int i=0; i<count; i++){
+    values.push_back(*((uint16_t*)(&parameters[pos])));
+    pos += sizeof(uint16_t);
+  }  
+
+  Serial.print("Values: ");  
+  for (int i=0; i<values.size(); i++){
+    Serial.printf("%d ", values[i]);
   }
   Serial.println();
-
-  coeffY.clear();
-  for (int i=0; i<yct; i++){
-    coeffY.push_back(*((float*)(&parameters[pos])));
-    pos += sizeof(float);
-  }
-
-  Serial.print("y=");
-  for (int i = 0; i<coeffY.size(); i++){
-    Serial.printf("%s%f * x^%d", coeffY[i]<0?"":(i>0?"+":""), coeffY[i], i);
-  }
-  Serial.println();
-
-  Serial.println(touchCalibration_zMin);
 }

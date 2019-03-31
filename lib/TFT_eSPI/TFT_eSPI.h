@@ -14,10 +14,8 @@
 // Stop fonts etc being loaded multiple times
 #ifndef _TFT_eSPIH_
 #define _TFT_eSPIH_
-#include <QR>
 #include <stdio.h>
 #include <vector>
-
 //#define ESP32 //Just used to test ESP32 options
 
 // Include header file that defines the fonts loaded, the TFT drivers

@@ -17,10 +17,9 @@
   }
 
            // Run screen calibration and test, report calibration values to the serial port
-  void     calibrateTouchLinear(uint16_t *data, uint32_t color_fg, uint32_t color_bg, uint8_t size);
    inline uint16_t calibrationXCaptureCount() const { return 4; }
    inline uint16_t calibrationYCaptureCount() const { return 4; }
-   inline uint16_t calibrationDataSize() const { return calibrationXCaptureCount() * calibrationYCaptureCount() * sizeof(float) + 2*sizeof(uint8_t) + sizeof(uint16_t); }
+   inline uint16_t calibrationDataSize() const { return 2 * calibrationXCaptureCount() * calibrationYCaptureCount() * sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t); }
    void     calibrateTouch(uint8_t *data, uint32_t color_fg, uint32_t color_bg, uint8_t size);
            // Set the screen calibration values
   void     setTouch(uint8_t *data);
@@ -36,7 +35,7 @@
 
   // Initialise with example calibration values so processor does not crash if setTouch() not called in setup()
   uint16_t touchCalibration_zMin = 600;
-  std::vector<float> coeffX, coeffY;
+  std::vector<uint16_t> values;
 
   uint32_t _pressTime;        // Press and hold time-out
   uint16_t _pressX, _pressY;  // For future use (last sampled calibrated coordinates)
