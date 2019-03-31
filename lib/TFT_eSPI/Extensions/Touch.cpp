@@ -73,10 +73,11 @@ uint16_t TFT_eSPI::getTouchRawZ(void){
 ** Description:             read validated position. Return false if not pressed. 
 ***************************************************************************************/
 #define _RAWERR 10 // Deadband error allowed in successive position samples
-#define ZBUFFER_SIZE 100
-uint16_t zBuffer[ZBUFFER_SIZE];
-uint16_t zBufferStart = 0;
 uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
+  uint16_t zDontCare = 0;
+  return validTouch(x, y, &zDontCare, threshold);
+}
+uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t *z, uint16_t threshold){
   uint16_t x_tmp, y_tmp, x_tmp2, y_tmp2;
 
   // Wait until pressure stops increasing to debounce pressure
@@ -89,17 +90,11 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
     delay(1);
   }
 
-  zBuffer[zBufferStart] = z1;
-  if (z1<3*threshold)
-    zBufferStart = (zBufferStart+1)%ZBUFFER_SIZE;
-  float tres = 0;
-  for (int i=0; i<ZBUFFER_SIZE; i++){
-    tres += zBuffer[i]/(float)ZBUFFER_SIZE;
-  }
-  //Serial.print("Z = ");Serial.print(z1);
-  //   Serial.print(" "); Serial.println(tres);
+  
+  Serial.print("Z = ");Serial.print(z1);
+     Serial.print(" "); Serial.println(threshold);
 
-  if (/*z1 <= threshold &&*/ z1<=1.2*tres) {
+  if (z1 <= threshold) {
     return false;
   }
     
@@ -121,7 +116,7 @@ uint8_t TFT_eSPI::validTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
   
   *x = x_tmp;
   *y = y_tmp;
-  
+  *z = z1;
   return true;
 }
   
@@ -147,8 +142,9 @@ uint8_t TFT_eSPI::getTouch(uint16_t *x, uint16_t *y, uint16_t threshold){
   
   _pressTime = millis() + 50;
 
+Serial.printf("<------ %04dx%04d     %04d-%04d  %04d-%04d\n", x_tmp, y_tmp, touchCalibration_x0, touchCalibration_x1, touchCalibration_y0, touchCalibration_y1);
   convertRawXY(&x_tmp, &y_tmp);
-
+Serial.printf("------> %04dx%04d\n", x_tmp, y_tmp);
   if (x_tmp >= _width || y_tmp >= _height) return valid;
 
   _pressX = x_tmp;
@@ -190,19 +186,49 @@ void TFT_eSPI::convertRawXY(uint16_t *x, uint16_t *y)
 ** Description:             generates calibration parameters for touchscreen. 
 ***************************************************************************************/
 void TFT_eSPI::calibrateTouch(uint16_t *parameters, uint32_t color_fg, uint32_t color_bg, uint8_t size){
-  int16_t values[] = {0,0,0,0,0,0,0,0};
-  uint16_t x_tmp, y_tmp;
+  const uint8_t SAMPLES = 64;
+  int32_t values[] = {0,0, 0,0, 0,0, 0,0};
+  int32_t zSamples = 0;
+  uint16_t x_tmp, y_tmp, z_tmp;  
+  int32_t zInit = 0;
 
-
+  //calibrate the initial z-value
+  for (int i=0; i<SAMPLES; i++){
+    zInit += getTouchRawZ();
+  }
+  zInit = (zInit * 1.5) / SAMPLES;
 
   for(uint8_t i = 0; i<4; i++){
+    fillRect(0, 0, size+1, size+1, color_fg);
+    fillRect(0, _height-size-1, size+1, size+1, color_fg);
+    fillRect(_width-size-1, 0, size+1, size+1, color_fg);
+    fillRect(_width-size-1, _height-size-1, size+1, size+1, color_fg);
+
+    
+    if (i == 5) break; // used to clear the arrows
+
+    // user has to get the chance to release
+    // do before we mark the next rect to give feedback that we are in delay state
+    //if(i>0) 
+    {
+      //wait for release
+      while(validTouch(&x_tmp, &y_tmp, &z_tmp, zInit)){
+        delay(50);
+      }
+
+      drawRect(0, 0, size+1, size+1, color_bg);
+      drawRect(0, _height-size-1, size+1, size+1, color_bg);
+      drawRect(_width-size-1, 0, size+1, size+1, color_bg);
+      drawRect(_width-size-1, _height-size-1, size+1, size+1, color_bg);
+
+      delay(2000);
+    }
+
     fillRect(0, 0, size+1, size+1, color_bg);
     fillRect(0, _height-size-1, size+1, size+1, color_bg);
     fillRect(_width-size-1, 0, size+1, size+1, color_bg);
     fillRect(_width-size-1, _height-size-1, size+1, size+1, color_bg);
 
-    if (i == 5) break; // used to clear the arrows
-    
     switch (i) {
       case 0: // up left
         drawLine(0, 0, 0, size, color_fg);
@@ -224,22 +250,21 @@ void TFT_eSPI::calibrateTouch(uint16_t *parameters, uint32_t color_fg, uint32_t 
         drawLine(_width-1, _height-1-size, _width-1, _height-1, color_fg);
         drawLine(_width-1-size, _height-1, _width-1, _height-1, color_fg);
         break;
-      }
+      }    
 
-    // user has to get the chance to release
-    if(i>0) delay(1000);
-
-    for(uint8_t j= 0; j<8; j++){
+    for(uint8_t j= 0; j<SAMPLES; j++){
       // Use a lower detect threshold as corners tend to be less sensitive
-      while(!validTouch(&x_tmp, &y_tmp, Z_THRESHOLD/1.4));
-      values[i*2  ] += x_tmp;
-      values[i*2+1] += y_tmp;
+      while(!validTouch(&x_tmp, &y_tmp, &z_tmp, zInit));
+        values[i*2  ] += x_tmp;
+        values[i*2+1] += y_tmp;
+        zSamples += z_tmp;
       }
-    values[i*2  ] /= 8;
-    values[i*2+1] /= 8;
+      values[i*2  ] /= SAMPLES;
+      values[i*2+1] /= SAMPLES;
+      delay(50);
   }
-
-
+ touchCalibration_zMin = (((zSamples/SAMPLES) >> 2) + zInit) >> 1;  
+ 
   // from case 0 to case 1, the y value changed. 
   // If the measured delta of the touch x axis is bigger than the delta of the y axis, the touch and TFT axes are switched.
   touchCalibration_rotate = false;
@@ -288,6 +313,7 @@ void TFT_eSPI::calibrateTouch(uint16_t *parameters, uint32_t color_fg, uint32_t 
     parameters[2] = touchCalibration_y0;
     parameters[3] = touchCalibration_y1;
     parameters[4] = touchCalibration_rotate | (touchCalibration_invert_x <<1) | (touchCalibration_invert_y <<2);
+    parameters[5] = touchCalibration_zMin;
   }
 }
 
@@ -310,4 +336,6 @@ void TFT_eSPI::setTouch(uint16_t *parameters){
   touchCalibration_rotate = parameters[4] & 0x01;
   touchCalibration_invert_x = parameters[4] & 0x02;
   touchCalibration_invert_y = parameters[4] & 0x04;
+
+  touchCalibration_zMin = parameters[5];
 }
