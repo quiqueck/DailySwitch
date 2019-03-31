@@ -389,7 +389,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
     
     tft.init();
     tft.setRotation(3);
-
+    calibrationData = (uint8_t*)malloc(tft.calibrationDataSize());
 
     this->prepareTouchCalibration(force_calibration);
 
@@ -401,7 +401,7 @@ void SwitchUI::prepareTouchCalibration(bool force_calibration){
     Console.println("Read Calibration Data");   
     // check if calibration file exists
     bool calDataOK = false;
-    calDataOK = FileSystem::global()->readCalibrationFile((char *)calibrationData);
+    calDataOK = FileSystem::global()->readCalibrationFile(calibrationData, tft.calibrationDataSize());
 
     if (calDataOK && !force_calibration) {
         Console.println("Starting Touch");
@@ -431,7 +431,7 @@ void SwitchUI::startTouchCalibration(){
   tft.calibrateTouch(calibrationData, TFT_WHITE, TFT_RED, 15);
 
   Console.println("Writing Calibration");
-  FileSystem::global()->writeCalibrationFile((const char*)calibrationData);  
+  FileSystem::global()->writeCalibrationFile(calibrationData, tft.calibrationDataSize());  
 
   this->redrawAll();
 #endif

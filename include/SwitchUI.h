@@ -89,7 +89,7 @@ class SwitchUI{
         std::vector<class Button*> buttons;  
         std::vector<std::string> pages;      
         long lastDown;
-        uint16_t calibrationData[10];
+        uint8_t* calibrationData;
         uint16_t lightLevelX;
         uint16_t lightLevelY;
         uint16_t lightLevelW;

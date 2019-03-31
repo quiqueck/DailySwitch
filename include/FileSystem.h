@@ -18,8 +18,8 @@ class FileSystem {
             }
         }
 
-        bool readCalibrationFile(char* calibrationData);
-        void writeCalibrationFile(const char* calibrationData);
+        bool readCalibrationFile(uint8_t* calibrationData, uint8_t sz);
+        void writeCalibrationFile(const uint8_t* calibrationData, uint8_t sz);
     private:
         static FileSystem* _global;
         FileSystem();
