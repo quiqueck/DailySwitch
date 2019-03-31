@@ -11,7 +11,7 @@
 // See license in root directory.
 
 
-void polyfit(const std::vector<double> &tIn, const std::vector<double> &yIn, std::vector<double> &coeff, int order)
+void polyfit(const std::vector<double> &tIn, const std::vector<double> &yIn, std::vector<float> &coeff, int order)
 {
   assert(tIn.size() == yIn.size());
 	assert(tIn.size() >= order+1);
