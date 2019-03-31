@@ -17,9 +17,12 @@
   }
 
            // Run screen calibration and test, report calibration values to the serial port
-  void     calibrateTouch(uint16_t *data, uint32_t color_fg, uint32_t color_bg, uint8_t size);
+   inline uint16_t calibrationXCaptureCount() const { return 4; }
+   inline uint16_t calibrationYCaptureCount() const { return 5; }
+   inline uint16_t calibrationDataSize() const { return 2 * calibrationXCaptureCount() * calibrationYCaptureCount() * sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t); }
+   void     calibrateTouch(uint8_t *data, uint32_t color_fg, uint32_t color_bg, uint8_t size);
            // Set the screen calibration values
-  void     setTouch(uint16_t *data);
+  void     setTouch(uint8_t *data);
 
  private:
            // Handlers for the SPI settings and clock speed change
@@ -30,9 +33,9 @@
   uint8_t  validTouch(uint16_t *x, uint16_t *y, uint16_t threshold = 600);
   uint8_t  validTouch(uint16_t *x, uint16_t *y, uint16_t *z, uint16_t threshold);
 
-           // Initialise with example calibration values so processor does not crash if setTouch() not called in setup()
-  uint16_t touchCalibration_x0 = 300, touchCalibration_x1 = 3600, touchCalibration_y0 = 300, touchCalibration_y1 = 3600, touchCalibration_zMin = 600;
-  uint8_t  touchCalibration_rotate = 1, touchCalibration_invert_x = 2, touchCalibration_invert_y = 0;
+  // Initialise with example calibration values so processor does not crash if setTouch() not called in setup()
+  uint16_t touchCalibration_zMin = 600;
+  std::vector<uint16_t> values;
 
   uint32_t _pressTime;        // Press and hold time-out
   uint16_t _pressX, _pressY;  // For future use (last sampled calibrated coordinates)

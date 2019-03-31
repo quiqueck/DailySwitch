@@ -14,12 +14,12 @@ FileSystem::FileSystem(){
     Console.printf("SD-Info: %dMB/%dMB \n", SD.usedBytes()/(1024*1024), SD.totalBytes()/(1024*1024));    
 }
 
-bool FileSystem::readCalibrationFile(char* calibrationData){
+bool FileSystem::readCalibrationFile(uint8_t* calibrationData, uint8_t sz){
     bool result = false;
     if (SD.exists(CALIBRATION_FILE)) {
         File f = SD.open(CALIBRATION_FILE, "r");
         if (f) {
-            if (f.readBytes((char *)calibrationData, 14) == 14)
+            if (f.readBytes((char *)calibrationData, sz) == sz)
                 result = true;
             f.close();
         }
@@ -28,11 +28,11 @@ bool FileSystem::readCalibrationFile(char* calibrationData){
     return result;
 }
 
-void FileSystem::writeCalibrationFile(const char* calibrationData) {
+void FileSystem::writeCalibrationFile(const uint8_t* calibrationData, uint8_t sz) {
     // store data
     File f = SD.open(CALIBRATION_FILE, "w");
     if (f) {
-        f.write((const unsigned char *)calibrationData, 14);
+        f.write((const unsigned char *)calibrationData, sz);
         f.close();
     }
 }
