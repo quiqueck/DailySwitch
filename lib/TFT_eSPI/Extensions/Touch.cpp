@@ -350,8 +350,8 @@ void TFT_eSPI::calibrateTouchLinear(uint16_t *parameters, uint32_t color_fg, uin
 
 void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t color_bg, uint8_t size){
   const uint8_t SAMPLES = 64;
-  const uint8_t CAPTURE_POINTS_X = 4;
-  const uint8_t CAPTURE_POINTS_Y = 4;
+  const uint8_t CAPTURE_POINTS_X = calibrationXCaptureCount();
+  const uint8_t CAPTURE_POINTS_Y = calibrationYCaptureCount();
   ;
 
   uint16_t x_tmp, y_tmp, z_tmp;  
@@ -488,9 +488,23 @@ void TFT_eSPI::setTouch(uint8_t *parameters){
     coeffX.push_back(*((float*)(&parameters[pos])));
     pos += sizeof(float);
   }
+  Serial.print("y=");
+  for (int i = 0; i<coeffX.size(); i++){
+    Serial.printf("%s%f * x^%d", coeffX[i]<0?"":(i>0?"+":""), coeffX[i], i);
+  }
+  Serial.println();
+
   coeffY.clear();
   for (int i=0; i<yct; i++){
     coeffY.push_back(*((float*)(&parameters[pos])));
     pos += sizeof(float);
   }
+
+  Serial.print("y=");
+  for (int i = 0; i<coeffY.size(); i++){
+    Serial.printf("%s%f * x^%d", coeffY[i]<0?"":(i>0?"+":""), coeffY[i], i);
+  }
+  Serial.println();
+
+  Serial.println(touchCalibration_zMin);
 }
