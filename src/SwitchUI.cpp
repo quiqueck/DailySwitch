@@ -622,6 +622,7 @@ void SwitchUI::redrawAll(){
 }
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
+#ifndef DISABLE_BUTTON_PRESS
     for (auto button : buttons) {
         if (button->inside(x, y)){
             if (button->page() == state.currentPage) {            
@@ -635,7 +636,7 @@ Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
     if (state.currentPage == LIGHT_LEVEL_PAGE){
         handleLightLevelSelect(NULL);
     }
-
+#endif
     return NULL;
 }
 
@@ -732,7 +733,9 @@ void SwitchUI::scanTouch(){
     }
     
     if (tft.getTouch(&x, &y) && x>0 && y>0 && x<tft.width() && y<tft.height()) {
-        //tft.drawRect(x-2, y-2, 5, 5, TFT_RED);
+#ifdef TEST_TOUCH
+        tft.drawRect(x-2, y-2, 5, 5, TFT_RED);
+#endif
         if (!state.touchDown) touchRoutine(true);
         state.touchDown = true;
         lastDown = micros();

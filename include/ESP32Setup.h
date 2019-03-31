@@ -4,6 +4,9 @@
 
 //#define DEBUG_LOG
 //#define HEADLESS
+#define PROXIMITY
+#define TEST_TOUCH
+#define DISABLE_BUTTON_PRESS
 //#define SI7021_DRIVER  //Temperature/Humidity
 //#define BH1750_DRIVER  //LightMeter
 

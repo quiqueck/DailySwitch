@@ -8,6 +8,11 @@
 #include "ESP32Setup.h"
 #include "NopSerial.h"
 #include "esp_pm.h"
+#ifdef PROXIMITY
+#include <Adafruit_APDS9960.h>
+
+#define INT_PIN GPIO_NUM_32
+#endif
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
@@ -15,8 +20,6 @@
 #include "FileSystem.h"
 
 #include "Weather.h"
-
-
 #include "DailyBluetoothSwitch.h"
 
 void stateChanged(bool state);
@@ -111,7 +114,16 @@ void setup()
 #else
     dbss = new DailyBluetoothSwitchServer("001");
 #endif
+
+#ifdef TEST_TOUCH
+#ifdef DISABLE_BUTTON_PRESS
+    ui->connectionStateChanged(false);
+#else
+    ui->connectionStateChanged(true);
+#endif
+#else
     dbss->setConnectionCallback(stateChanged);
+#endif
 
     t1 = new TouchPin(T0, forceCalib, 100);
     
@@ -119,7 +131,9 @@ void setup()
     //attachInterrupt(digitalPinToInterrupt(TFT_IRQ), touchEvent, FALLING);
     SleepTimer::begin(ui);    
 
+#ifndef TEST_TOUCH
     dbss->startAdvertising();
+#endif
 
     //esp_sleep_enable_touchpad_wakeup();
     //esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 0);
@@ -321,7 +335,9 @@ void touchEvent(){
 
 void buttonEvent(uint8_t id, uint8_t state){
     Console.printf("Sending %d, %d\n", id, state);
+#ifndef TEST_TOUCH
     dbss->sendNotification(id, (DailyBluetoothSwitchServer::DBSNotificationStates)state);
+#endif
 }
 
 void touchPanelEvent(bool down){
