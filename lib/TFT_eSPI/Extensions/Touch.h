@@ -18,7 +18,7 @@
 
            // Run screen calibration and test, report calibration values to the serial port
    inline uint16_t calibrationXCaptureCount() const { return 4; }
-   inline uint16_t calibrationYCaptureCount() const { return 4; }
+   inline uint16_t calibrationYCaptureCount() const { return 5; }
    inline uint16_t calibrationDataSize() const { return 2 * calibrationXCaptureCount() * calibrationYCaptureCount() * sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t); }
    void     calibrateTouch(uint8_t *data, uint32_t color_fg, uint32_t color_bg, uint8_t size);
            // Set the screen calibration values

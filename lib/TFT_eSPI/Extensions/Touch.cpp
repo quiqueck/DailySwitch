@@ -263,7 +263,7 @@ void TFT_eSPI::convertRawXY(uint16_t *x, uint16_t *y)
 #endif
 
 
-      Serial.printf("  %d, %d    %dx%d   %dx%d\n", xi, yi, SX(xi), SY(yi), SX(xi-1), PY(yi-1));
+      //Serial.printf("  %d, %d    %dx%d   %dx%d\n", xi, yi, SX(xi), SY(yi), SX(xi-1), PY(yi-1));
       float u, v, w;
       Vector p(X, Y);
       if ((Dx - Bx) * (Y - By) - (Dy - By) * (X - Bx) < 0) {
@@ -276,7 +276,7 @@ void TFT_eSPI::convertRawXY(uint16_t *x, uint16_t *y)
         barycentric(p, Vector(Bx, By), Vector(Cx, Cy), Vector(Dx, Dy), u, v, w);
         
         Vector res = B.mul(u).add(C.mul(v)).add(D.mul(w));
-        Serial.printf("--: u=%f, v=%f, w=%f --> %fx%f\n", u, v, w, res.x, res.y);
+        //Serial.printf("--: u=%f, v=%f, w=%f --> %fx%f\n", u, v, w, res.x, res.y);
         *x = (uint16_t)res.x;
         *y = (uint16_t)res.y;
 
@@ -293,7 +293,7 @@ void TFT_eSPI::convertRawXY(uint16_t *x, uint16_t *y)
         barycentric(p, Vector(Ax, Ay), Vector(Bx, By), Vector(Dx, Dy), u, v, w);
        
         Vector res = A.mul(u).add(B.mul(v)).add(D.mul(w));
-        Serial.printf("++: u=%f, v=%f, w=%f --> %fx%f\n", u, v, w, res.x, res.y);
+        //Serial.printf("++: u=%f, v=%f, w=%f --> %fx%f\n", u, v, w, res.x, res.y);
         *x = (uint16_t)res.x;
         *y = (uint16_t)res.y;
 
@@ -373,20 +373,18 @@ void TFT_eSPI::calibrateTouch(uint8_t *parameters, uint32_t color_fg, uint32_t c
       }
       Serial.printf("%dx%d: %d, %d\n", IDXX(xi, yi), IDXY(xi, yi), samplesX / SAMPLES, samplesY / SAMPLES);
       VX(xi, yi) = samplesX / SAMPLES;
-      VY(xi, yi) = samplesY / SAMPLES;
-        
-        
+      VY(xi, yi) = samplesY / SAMPLES;        
     }
   }
 
-Serial.print("Values: ");
-for (int i=0; i<values.size(); i++){
-  Serial.printf("%d ", values[i]);
-}
-Serial.println();
-Serial.print("ZMin: ");
+// Serial.print("Values: ");
+// for (int i=0; i<values.size(); i++){
+//   Serial.printf("%d ", values[i]);
+// }
+// Serial.println();
+// Serial.print("ZMin: ");
   touchCalibration_zMin = (((zSampleAcc/SAMPLES) / (CAPTURE_POINTS_X*CAPTURE_POINTS_Y)) + zInit) >> 1; 
-  Serial.println(touchCalibration_zMin);
+  // Serial.println(touchCalibration_zMin);
 
   if (parameters != NULL) {
     *((uint16_t*)(&parameters[0])) = values.size();
