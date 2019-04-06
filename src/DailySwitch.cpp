@@ -8,11 +8,7 @@
 #include "ESP32Setup.h"
 #include "NopSerial.h"
 #include "esp_pm.h"
-#if PROXIMITY 
-#include <Adafruit_APDS9960.h>
-Adafruit_APDS9960 apds;
-#define PROXIMITY_INT_PIN GPIO_NUM_32
-#endif
+
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
@@ -20,6 +16,7 @@ Adafruit_APDS9960 apds;
 #include "FileSystem.h"
 
 #include "Weather.h"
+#include "Proximity.h"
 #include "DailyBluetoothSwitch.h"
 
 void stateChanged(bool state);
@@ -108,16 +105,7 @@ void setup()
     FileSystem::init();
 
 #if PROXIMITY
-    if(!apds.begin(10, APDS9960_AGAIN_64X, APDS9960_ADDRESS, &Wire, IC2_DAT, IC2_CLK, IC2_FREQUENCY)){
-        Serial.println(F("Failed to initialize Proximity! Please check your wiring."));
-    } else {
-        Serial.println(F("Proximity available"));
-        apds.enableProximity(true);
-        apds.setProxPulse(APDS9960_PPULSELEN_32US, 64);
-        apds.setProximityInterruptThreshold(0, 29);
-        //apds.setLED(APDS9960_LEDDRIVE_100MA, APDS9960_LEDBOOST_300PCNT);
-        apds.enableProximityInterrupt();
-    }
+    Proximity::begin();
 #endif
     
 
@@ -214,15 +202,8 @@ bool logMem(){
 
 void loop()
 {    
-    Serial.println("loop");
 #if PROXIMITY    
-    if(!digitalRead(PROXIMITY_INT_PIN)){
-        Console.println(apds.readProximity());
-        SleepTimer::global()->invalidate();
-        apds.clearInterrupt();
-    } else {
-        Serial.println(apds.readProximity());
-    }
+    Proximity::global()->tick();    
 #endif
 
     static uint32_t count = 1000;
