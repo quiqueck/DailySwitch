@@ -6,6 +6,12 @@
 #include "NopSerial.h"
 
 enum ButtonType :uint8_t {SWITCH=0, PAGE=1, SELECT=2, SPECIAL_FUNCTION=3};
+const uint8_t SPECIAL_BUTTON_PROXIMITY_INC = 1;
+const uint8_t SPECIAL_BUTTON_PROXIMITY_DEC = 2;
+const uint8_t SPECIAL_BUTTON_SCREEN_OFF = 3;
+const uint8_t SPECIAL_BUTTON_UPDATE_WEATHER = 4;
+const uint8_t SPECIAL_BUTTON_SETTINGS = 5;
+const uint8_t SPECIAL_BUTTON_CALIBRATE_TOUCH = 6;
 
 class Button {
     public: 

@@ -7,6 +7,7 @@
 #include "ESP32Setup.h"
 #include "Sprite.h"
 #include "Weather.h"
+#include "Proximity.h"
 #include <SD.h>
 
 
@@ -658,9 +659,9 @@ void SwitchUI::reloadMainPage() {
         selectButton = NULL;
     }
 
-    if (state.currentPage != 0){        
-        state.currentPage = 0;
-        state.pushPage = 0;
+    if (state.currentPage == SETTINGS_PAGE || state.currentPage == LIGHT_LEVEL_PAGE){        
+        state.currentPage = MAIN_PAGE;
+        state.pushPage = MAIN_PAGE;
         redrawAll();
     }
 }
@@ -709,6 +710,33 @@ void SwitchUI::handleButtonPress(Button* btn){
         drawLightLevelBack();
         spr.pushSprite(lightLevelX, lightLevelY);
         spr.deleteSprite();
+    } else if (btn->type() == ButtonType::SPECIAL_FUNCTION){
+        switch (btn->id )  {
+            case SPECIAL_BUTTON_PROXIMITY_INC:
+                Proximity::global()->incProximity();
+                Proximity::global()->storeSettings();
+            break;
+            case SPECIAL_BUTTON_PROXIMITY_DEC:
+                Proximity::global()->decProximity();
+                Proximity::global()->storeSettings();
+            break;
+            case SPECIAL_BUTTON_SCREEN_OFF:
+                SleepTimer::global()->displayOff();
+                SleepTimer::global()->start();
+                delay(2000);
+            break;
+            case SPECIAL_BUTTON_UPDATE_WEATHER:
+                Weather::global()->update();
+            break;
+            case SPECIAL_BUTTON_SETTINGS:
+                
+            break;
+            case SPECIAL_BUTTON_CALIBRATE_TOUCH:
+                SleepTimer::global()->stop();
+                startTouchCalibration();        
+                SleepTimer::global()->start();
+            break;
+        }
     } else {
         this->pressRoutine(btn->id, btn->activeState());
     }

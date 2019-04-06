@@ -9,7 +9,13 @@ const fs = require('fs'),
       SWITCH=0, 
       PAGE=1, 
       SELECT=2,
-      SPECIAL_FUNCTION=3;
+      SPECIAL_FUNCTION=3,
+      SPECIAL_BUTTON_PROXIMITY_INC = 1,
+      SPECIAL_BUTTON_PROXIMITY_DEC = 2,
+      SPECIAL_BUTTON_SCREEN_OFF = 3,
+      SPECIAL_BUTTON_UPDATE_WEATHER = 4,
+      SPECIAL_BUTTON_SETTINGS = 5,
+      SPECIAL_BUTTON_CALIBRATE_TOUCH = 6;
 
 function convert(inFile, outFile, alpha){
     fs.createReadStream(inFile)
@@ -132,111 +138,146 @@ convert ('LightLevel.png', 'LL.IST', true);
 convert ('LightLevelDown.png', 'LLD.IST', true);
 convert ('LightLevelDis.png', 'LLX.IST', true);
 
+convert ('Settings.png', 'ST.IST', false);
+convert ('SettingsDown.png', 'STD.IST', false);
+convert ('SettingsDis.png', 'STX.IST', false);
+
 let lightLevel = {x:(406-77)/2, y:(320-171)/2, w:77, h:171};
 
 let buttons = [
+    {l:419, t:14, w:54, h:78, 
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_SETTINGS, state:OFF, name:"SET",
+        page:1
+    },
+    {l:45, t:42, w:48, h:48, 
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_PROXIMITY_INC, state:ON_SECONDARY,
+        name:"PROXINC",
+        page:0
+    },
+    {l:163, t:42, w:48, h:48, 
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_PROXIMITY_DEC, state:ON_SECONDARY,
+        name:"PROXDEC",
+        page:0
+    },
+    {l:51, t:147, w:100, h:48, 
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_UPDATE_WEATHER, state:ON_SECONDARY,
+        name:"WEATHER",
+        page:0
+    },
+    {l:51, t:259, w:100, h:48, 
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_CALIBRATE_TOUCH, state:ON_SECONDARY,
+        name:"CALIB",
+        page:0
+    },
+    {l:178, t:259, w:100, h:48, 
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_SCREEN_OFF, state:ON_SECONDARY,
+        name:"SCROFF",
+        page:0
+    },
+
+
     {l:22, t:28, w:70, h:52, 
         type:SWITCH, id:1, state:ON_SECONDARY,
         name:"WOHNZ",
-        page:0
+        page:1
     },
     {l:22, t:100, w:70, h:52, 
         type:SWITCH, id:1, state:ON,
         name:"WOHNZ",
-        page:0
+        page:1
     },
     {l:22, t:171, w:70, h:52, 
         type:SWITCH, id:1, state:OFF,
         name:"WOHNZ",
-        page:0
+        page:1
     },
     {l:114, t:28, w:70, h:52, 
         type:SWITCH, id:2, state:ON_SECONDARY,
         name:"ESSZ",
-        page:0
+        page:1
     },
     {l:114, t:100, w:70, h:52, 
         type:SWITCH, id:2, state:ON,
         name:"ESSZ",
-        page:0
+        page:1
     },
     {l:114, t:171, w:70, h:52, 
         type:SWITCH, id:2, state:OFF,
         name:"ESSZ",
-        page:0
+        page:1
     },
     {l:206, t:28, w:70, h:52, 
         type:SWITCH, id:3, state:ON_SECONDARY,
         name:"KUCHE",
-        page:0
+        page:1
     },
     {l:206, t:100, w:70, h:52, 
         type:SWITCH, id:3, state:ON,
         name:"KUCHE",
-        page:0
+        page:1
     },
     {l:206, t:171, w:70, h:52, 
         type:SWITCH, id:3, state:OFF,
         name:"KUCHE",
-        page:0
+        page:1
     },
     {l:317, t:28, w:70, h:52, 
         type:SWITCH, id:5, state:OFF,
         altState:ON, name:"SPECIAL",
-        page:0
+        page:1
     },
     {l:317, t:100, w:70, h:52, 
         type:SWITCH, id:4, state:OFF,
         altState:ON, name:"SOUND",
-        page:0
+        page:1
     },
     {l:418, t:223, w:48, h:48, 
         type:PAGE, id:1, state:ON,
         name:"BLUEPRNT",
-        page:0
+        page:1
     },
 
 
     {l:418, t:178, w:48, h:48, 
         type:PAGE, id:0, state:ON,
         name:"FAVORITS",
-        page:1
+        page:2
     },{l:35, t:64, w:48, h:48, 
         type:SELECT, id:6, state:ON,
         name:"LED_INN",
-        page:1
+        page:2
     },{l:93, t:22, w:48, h:48, 
         type:SELECT, id:7, state:ON,
         name:"CANDL",
-        page:1
+        page:2
     },{l:151, t:64, w:48, h:48, 
         type:SELECT, id:8, state:ON,
         name:"AVE_INN",
-        page:1
+        page:2
     },{l:38, t:204, w:48, h:48, 
         type:SELECT, id:9, state:ON,
         name:"LED_OUT",
-        page:1
+        page:2
     },{l:95, t:203, w:48, h:48, 
         type:SELECT, id:10, state:ON,
         name:"AVE_OUT",
-        page:1
+        page:2
     },{l:182, t:252, w:48, h:48, 
         type:SELECT, id:11, state:ON,
         name:"LED_ESS",
-        page:1
+        page:2
     },{l:203, t:188, w:48, h:48, 
         type:SELECT, id:12, state:ON,
         name:"ESSTIS",
-        page:1
+        page:2
     },{l:256, t:131, w:48, h:48, 
         type:SELECT, id:13, state:ON,
         name:"KUC_RE",
-        page:1
+        page:2
     },{l:325, t:131, w:48, h:48, 
         type:SELECT, id:14, state:ON,
         name:"KUC_LI",
-        page:1
+        page:2
     },
     
     
@@ -257,7 +298,7 @@ let buttons = [
     }
 ];
 
-writeButtons(buttons, lightLevel, ['MM', 'PL'], 'DEF.BTS');
+writeButtons(buttons, lightLevel, ['ST', 'MM', 'PL'], 'DEF.BTS');
 
 convert ('../weather-icons/weather-28.png', '01d.IST', true);
 convert ('../weather-icons/weather-32.png', '01n.IST', true);

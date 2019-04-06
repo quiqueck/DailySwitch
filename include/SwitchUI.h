@@ -11,6 +11,8 @@
 
 #define TOUCH_BOX_SIZE 86
 #define LIGHT_LEVEL_PAGE 0xF
+#define MAIN_PAGE 0x01
+#define SETTINGS_PAGE 0x00
 
 class SwitchUI{
     public:
