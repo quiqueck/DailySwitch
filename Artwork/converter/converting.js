@@ -150,12 +150,12 @@ let buttons = [
         page:1
     },
     {l:45, t:42, w:48, h:48, 
-        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_PROXIMITY_INC, state:ON_SECONDARY,
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_PROXIMITY_DEC, state:ON_SECONDARY,
         name:"PROXINC",
         page:0
     },
     {l:163, t:42, w:48, h:48, 
-        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_PROXIMITY_DEC, state:ON_SECONDARY,
+        type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_PROXIMITY_INC, state:ON_SECONDARY,
         name:"PROXDEC",
         page:0
     },
@@ -172,6 +172,16 @@ let buttons = [
     {l:178, t:259, w:100, h:48, 
         type:SPECIAL_FUNCTION, id:SPECIAL_BUTTON_SCREEN_OFF, state:ON_SECONDARY,
         name:"SCROFF",
+        page:0
+    }, 
+    {l:418, t:178, w:48, h:48, 
+        type:PAGE, id:1, state:ON,
+        name:"FAVORITS",
+        page:0
+    },
+    {l:418, t:223, w:48, h:48, 
+        type:PAGE, id:2, state:ON,
+        name:"BLUEPRNT",
         page:0
     },
 
@@ -232,14 +242,14 @@ let buttons = [
         page:1
     },
     {l:418, t:223, w:48, h:48, 
-        type:PAGE, id:1, state:ON,
+        type:PAGE, id:2, state:ON,
         name:"BLUEPRNT",
         page:1
     },
 
 
     {l:418, t:178, w:48, h:48, 
-        type:PAGE, id:0, state:ON,
+        type:PAGE, id:1, state:ON,
         name:"FAVORITS",
         page:2
     },{l:35, t:64, w:48, h:48, 

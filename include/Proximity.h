@@ -13,9 +13,11 @@ class Proximity {
         
         void tick();
         void storeSettings();
-        inline uint8_t minProximity() const { return state & 0x0F; }
-        inline uint8_t incProximity() { return changProximity(10); }
-        inline uint8_t decProximity() { return changProximity(-10); }
+        inline uint8_t minProximity() const { return minP; }
+        inline uint8_t incProximity() { return changProximity(5); }
+        inline uint8_t decProximity() { return changProximity(-5); }
+        inline uint8_t isReady() const { return state & 0x01; }
+        uint8_t currentValue();
 
         static inline void begin(){
             if (Proximity::_global == NULL){
@@ -27,10 +29,18 @@ class Proximity {
     private:
         Proximity();
         void doBegin();
+        void updateInterrupt();
 
         static Proximity* _global;
-        uint16_t state;
-        inline void setMinProximity(uint8_t minp) { state = (state & 0xF0) | minp;}
+        uint8_t state;
+        uint8_t minP;
+        inline void markReady() { 
+            state = state | 0x01;            
+        }
+        inline void setMinProximity(uint8_t minp) { 
+            minP = minp;
+            updateInterrupt();
+        }
         uint8_t changProximity(int8_t delta){
             int v = minProximity();
             v += delta;

@@ -30,15 +30,15 @@ class SwitchUI{
         void luxChanged(float l);
         std::string  pageDefName() {
             if (pages.size() == 0) return "/MM.IST";
-            return "/" + pages[state.currentPage >= pages.size() ? state.pushPage : state.currentPage] + ".IST";
+            return "/" + pages[currentPage() >= pages.size() ? pushPage() : currentPage()] + ".IST";
         }
         std::string  pageDisName() {
             if (pages.size() == 0) return "/MMX.IST";
-            return "/" + pages[state.currentPage >= pages.size() ? state.pushPage : state.currentPage] + "X.IST";
+            return "/" + pages[currentPage() >= pages.size() ? pushPage() : currentPage()] + "X.IST";
         }
         std::string  pageSelName() {
             if (pages.size() == 0) return "/MMD.IST";
-            return "/" + pages[state.currentPage >= pages.size() ? state.pushPage : state.currentPage] + "D.IST";
+            return "/" + pages[currentPage() >= pages.size() ? pushPage() : currentPage()] + "D.IST";
         }
 
         inline void displayOff() { tft.writecommand(0x10); delay(6); }
@@ -62,6 +62,7 @@ class SwitchUI{
         void drawInternalState();
         void drawTemperatureState();
         void drawLightLevelBack();
+        void drawProximityState();
 
         void ReadDefinitions(const char *filename);
     public:
@@ -71,7 +72,7 @@ class SwitchUI{
         const std::function<void(bool)> touchRoutine; 
         mySprite spr;       
 
-        struct {
+        /*struct {
                 bool blockUntilRelease  : 1; 
                 bool touchDown          : 1; 
                 bool wasConnected       : 1;
@@ -80,7 +81,26 @@ class SwitchUI{
                 uint8_t currentPage     : 4;
                 uint8_t pushPage        : 4;
                 uint32_t reserved       : 19;                
-        } state;
+        } state;*/
+        uint8_t state;
+        uint8_t pageState;
+        uint8_t settingsPressCount;
+        inline boolean blockUntilRelease() const { return state & 0x01;}
+        inline void blockUntilRelease(boolean v) { if (v) state |= 0x01; else state &= 0xFE; }
+        inline boolean touchDown() const { return state & 0x02;}
+        inline void touchDown(boolean v) { if (v) state |= 0x02; else state &= 0xFD; }
+        inline boolean wasConnected() const { return state & 0x04;}
+        inline void wasConnected(boolean v) { if (v) state |= 0x04; else state &= 0xFB; }
+        inline boolean drewConnected() const { return state & 0x08;}
+        inline void drewConnected(boolean v) { if (v) state |= 0x08; else state &= 0xF7; }
+        inline boolean dirty() const { return state & 0x10;}
+        inline void dirty(boolean v) { if (v) state |= 0x10; else state &= 0xEF; }
+
+        inline uint8_t currentPage() const { return (pageState & 0x0F);}
+        inline void currentPage(uint8_t v) { pageState = (pageState & 0xF0) | (v & 0x0F); }
+
+        inline uint8_t pushPage() const { return (pageState & 0xF0) >> 4;}
+        inline void pushPage(uint8_t v) { pageState = (pageState & 0x0F) | ((v << 4) & 0xF0); }
 
         float temperature;
         float temperatureIntern;

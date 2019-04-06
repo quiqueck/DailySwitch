@@ -20,6 +20,7 @@ class SleepTimer {
         void restart();
         void stop();
         void start();
+        void sleepNow();
 
     private:
         static const uint8_t reduceBrightnessAt;

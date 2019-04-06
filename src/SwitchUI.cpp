@@ -89,7 +89,7 @@ void SwitchUI::drawLightLevelBack(){
 
 void SwitchUI::drawBmp(const class Button* bt, bool toSprite, uint16_t offX, uint16_t offY){
     //discard draw event if this button is not visible
-    if (!toSprite && bt->page() != state.currentPage)
+    if (!toSprite && bt->page() != currentPage())
         return;
 
     if (bt->page() == LIGHT_LEVEL_PAGE){        
@@ -108,7 +108,7 @@ void SwitchUI::drawBmp(const class Button* bt, bool toSprite, uint16_t offX, uin
             );         
             spr.pushSprite(bt->l(), bt->t());
             spr.deleteSprite();
-    } else if (state.wasConnected) {
+    } else if (wasConnected()) {
         std::string file = bt->isPressed() ? pageSelName() : pageDefName();
         drawBmp(file, bt->l(), bt->t(), bt->w(), bt->h(), toSprite, offX, offY);        
     } else {
@@ -371,23 +371,25 @@ void SwitchUI::ReadDefinitions(const char *filename) {
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(mySprite(&tft)){
     Console.printf("Resolution: %dx%d\n", tft.width(), tft.height());
-
+    state = 0;
+    pageState = 0;
     temperature = NAN;
     humidity = NAN;
     lightLevelX = 0;
     lightLevelY = 0;
     lightLevelW = 1;
     lightLevelH = 1;
-    state.currentPage = 0;
-    state.pushPage = 0;
-    state.wasConnected = false;
-    state.drewConnected = true;
-    state.dirty = true;
+    settingsPressCount = 0;
+    currentPage(MAIN_PAGE);
+    pushPage(MAIN_PAGE);
+    wasConnected(false);
+    drewConnected (true);
+    dirty(true);
     pressedButton = NULL;
     selectButton = NULL;
     lastDown = micros();
-    state.touchDown = false;
-    state.blockUntilRelease = false;
+    touchDown(false);
+    blockUntilRelease(false);
     
     ReadDefinitions("/DEF.BTS");
     
@@ -450,7 +452,7 @@ void SwitchUI::setBrightness(uint8_t val){
     else if (val=0xff) digitalWrite(TFT_BL, HIGH);
     else*/ analogWrite(TFT_BL, val);
 
-    if (val==0 && state.dirty){
+    if (val==0 && dirty()){
            redrawAll();
     }
 }
@@ -566,7 +568,7 @@ void SwitchUI::luxChanged(float l){
 }
 
 void SwitchUI::connectionStateChanged(bool stateIn){
-    state.wasConnected = stateIn;
+    wasConnected(stateIn);
     drawConnectionState();
 }
 
@@ -594,15 +596,15 @@ void SwitchUI::drawConnectionState(){
     tft.setCursor(443, 305, 2);
     tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
     
-    if (state.wasConnected) tft.drawCentreString("verbunden", 443, 306, 2);
+    if (wasConnected()) tft.drawCentreString("verbunden", 443, 306, 2);
     else tft.drawCentreString("suche...", 443, 306, 2);
     
     tft.unloadFont();
 
-    if (state.drewConnected != state.wasConnected){
-        state.drewConnected = state.wasConnected;
+    if (drewConnected() != wasConnected()){
+        drewConnected(wasConnected());
         std::string f;
-        if (state.wasConnected == true)
+        if (wasConnected() == true)
             f = pageDefName();            
         else
             f = pageDisName();
@@ -610,10 +612,31 @@ void SwitchUI::drawConnectionState(){
     }
 }
 
+void SwitchUI::drawProximityState(){
+    #if PROXIMITY
+    if (currentPage() == SETTINGS_PAGE){
+        tft.fillRect(69+24, 42, 117-48, 48, TFT_WHITE);
+        tft.loadFont("RCL18");
+        tft.setTextDatum(TL_DATUM);
+        tft.setCursor(69+40, 48, 2);
+        tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
+        tft.drawString((String)((int)Proximity::global()->minProximity()), 69+40, 48, 2); 
+        tft.unloadFont();  
+
+        tft.loadFont("RCR12");
+        tft.setTextDatum(TL_DATUM);
+        tft.setCursor(69+50, 72, 2);
+        tft.setTextColor(TFT_LIGHTGREY, TFT_WHITE);  tft.setTextSize(1);
+        tft.drawString((String)((int)Proximity::global()->currentValue()), 69+50, 72, 2); 
+        tft.unloadFont();        
+    }
+    #endif
+}
+
 void SwitchUI::redrawAll(){
-    state.dirty = false;
+    dirty(false);
     Console.printf("Redraw all %d\n", buttons.size());
-    if (state.wasConnected == true) {
+    if (wasConnected() == true) {
         drawBmp(pageDefName());
         for (auto button : buttons) {
             if (button->isPressed()){
@@ -627,21 +650,25 @@ void SwitchUI::redrawAll(){
     drawConnectionState();
     drawInternalState();
     drawTemperatureState(); 
+
+    if (currentPage() == SETTINGS_PAGE){
+        drawProximityState();
+    }
 }
 
 Button* SwitchUI::buttonAt(uint16_t x, uint16_t y){
 #ifndef DISABLE_BUTTON_PRESS
     for (auto button : buttons) {
         if (button->inside(x, y)){
-            if (button->page() == state.currentPage) {            
+            if (button->page() == currentPage()) {            
                 return button;        
             } else {
-                Console.printf("Button: for %d, on %d\n", button->page(), state.currentPage);
+                Console.printf("Button: for %d, on %d\n", button->page(), currentPage());
             }
         }
     } 
 
-    if (state.currentPage == LIGHT_LEVEL_PAGE){
+    if (currentPage() == LIGHT_LEVEL_PAGE){
         handleLightLevelSelect(NULL);
     }
 #endif
@@ -659,16 +686,16 @@ void SwitchUI::reloadMainPage() {
         selectButton = NULL;
     }
 
-    if (state.currentPage == SETTINGS_PAGE || state.currentPage == LIGHT_LEVEL_PAGE){        
-        state.currentPage = MAIN_PAGE;
-        state.pushPage = MAIN_PAGE;
+    if (currentPage() == SETTINGS_PAGE || currentPage() == LIGHT_LEVEL_PAGE){        
+        currentPage(MAIN_PAGE);
+        pushPage(MAIN_PAGE);
         redrawAll();
     }
 }
 
 void SwitchUI::handleLightLevelSelect(Button* btn){
-    if (state.currentPage == LIGHT_LEVEL_PAGE) {
-        state.currentPage = state.pushPage;        
+    if (currentPage() == LIGHT_LEVEL_PAGE) {
+        currentPage(pushPage());
         drawBmp(pageDefName(), lightLevelX, lightLevelY, lightLevelW, lightLevelH); 
     }
 
@@ -684,12 +711,17 @@ void SwitchUI::handleLightLevelSelect(Button* btn){
 }
 
 void SwitchUI::handleButtonPress(Button* btn){
+    if (btn->type() != ButtonType::SPECIAL_FUNCTION && btn->id != SPECIAL_BUTTON_SETTINGS) {
+        Serial.printf("RESET SettingsPress");
+        settingsPressCount = 0;
+    }
+
     //Serial.printf("btn: %d, %d, %d, %d", btn->id, btn->type(), btn->page(), btn->hasAlternative());
     if (btn->page() == LIGHT_LEVEL_PAGE){
         handleLightLevelSelect(btn);
     } else if (btn->type() == ButtonType::PAGE){
-        state.currentPage = btn->id;
-        state.pushPage = btn->id;
+        currentPage(btn->id);
+        pushPage(btn->id);
         redrawAll();
     } else if (btn->type() == ButtonType::SELECT){
         Console.printf("Undo Button %X\n", (unsigned int)pressedButton);
@@ -699,10 +731,10 @@ void SwitchUI::handleButtonPress(Button* btn){
         pressedButton = NULL;  
 
         selectButton = btn;
-        state.pushPage = state.currentPage;
-        state.currentPage = LIGHT_LEVEL_PAGE;
+        pushPage(currentPage());
+        currentPage(LIGHT_LEVEL_PAGE);
 
-        Console.printf("Draw Alpha %d\n", state.currentPage);
+        Console.printf("Draw Alpha %d\n", currentPage());
 
         spr.setColorDepth(16);
         spr.createSprite(lightLevelW, lightLevelH);
@@ -715,21 +747,32 @@ void SwitchUI::handleButtonPress(Button* btn){
             case SPECIAL_BUTTON_PROXIMITY_INC:
                 Proximity::global()->incProximity();
                 Proximity::global()->storeSettings();
+                drawProximityState();
             break;
             case SPECIAL_BUTTON_PROXIMITY_DEC:
                 Proximity::global()->decProximity();
                 Proximity::global()->storeSettings();
+                drawProximityState();
             break;
             case SPECIAL_BUTTON_SCREEN_OFF:
-                SleepTimer::global()->displayOff();
                 SleepTimer::global()->start();
+                SleepTimer::global()->sleepNow();
                 delay(2000);
             break;
             case SPECIAL_BUTTON_UPDATE_WEATHER:
                 Weather::global()->update();
             break;
             case SPECIAL_BUTTON_SETTINGS:
-                
+                if (settingsPressCount > 2){
+                   Console.printf("OPEN Settings...");                
+                   currentPage(SETTINGS_PAGE);
+                   pushPage(SETTINGS_PAGE);
+                   redrawAll();
+                } else {
+                   weatherChanged(NULL);
+                   settingsPressCount++;
+                   Serial.printf("INC SettingsPress %d", settingsPressCount);
+                }
             break;
             case SPECIAL_BUTTON_CALIBRATE_TOUCH:
                 SleepTimer::global()->stop();
@@ -743,23 +786,31 @@ void SwitchUI::handleButtonPress(Button* btn){
 }
 
 void SwitchUI::scanTouch(){
+    static unsigned long lastStateUpdate = millis();
     /*tft.loadFont("RCL12");
     tft.setTextColor(TFT_BLACK, TFT_WHITE);*/
     uint16_t x, y;
     unsigned long delta = micros() - lastDown;
     
-    
+    //make sure we have a continuous state update
+    if (currentPage() == SETTINGS_PAGE){
+        if (millis()-lastStateUpdate>100){
+            drawProximityState();
+            lastStateUpdate = millis(); 
+        }
+    }
+
     //wait a bit before we send the touch-up event
     if (delta > 100*1000) {
-        if (state.touchDown) touchRoutine(false);
-        state.touchDown = false;
-        state.blockUntilRelease = false;
+        if (touchDown()) touchRoutine(false);
+        touchDown(false);
+        blockUntilRelease(false);
 
         if (pressedButton != NULL) {
             if (!pressedButton->hasAlternative()) {
                 pressedButton->up();
             }
-            if (state.wasConnected == true) {
+            if (wasConnected() == true) {
                 drawBmp(pressedButton);
             } else {
                 drawBmp(pressedButton);
@@ -773,27 +824,27 @@ void SwitchUI::scanTouch(){
 #ifdef TEST_TOUCH
         tft.drawRect(x-2, y-2, 5, 5, TFT_RED);
 #endif
-        if (!state.touchDown) touchRoutine(true);
-        state.touchDown = true;
+        if (!touchDown()) touchRoutine(true);
+        touchDown(true);
         lastDown = micros();
         Console.printf("touch %d, %d\n", x, y);
         
         //ignore touches when we reactivate
         if (SleepTimer::global()->noBacklight()) {
-            state.blockUntilRelease = true;
+            blockUntilRelease(true);
             SleepTimer::global()->invalidate();                     
             return;
         }
         SleepTimer::global()->invalidate();      
 
-        if (!state.blockUntilRelease){
+        if (!blockUntilRelease()){
             Button* nowButton = buttonAt(x, y);
             if (pressedButton != nowButton){
                 if (pressedButton != NULL) {
                     if (!pressedButton->hasAlternative()) {
                         pressedButton->up();
                     }
-                    if (state.wasConnected == true) {
+                    if (wasConnected() == true) {
                         drawBmp(pressedButton);
                     } else {
                         drawBmp(pressedButton);
@@ -801,13 +852,13 @@ void SwitchUI::scanTouch(){
                     //pressedButton->draw(this);
                 }
                 if (nowButton != NULL) {
-                    state.dirty = true;
+                    dirty(true);
                     if (!nowButton->hasAlternative()) {
                         nowButton->down();
                     } else {
                         nowButton->toogle();
                     }
-                    if (state.wasConnected == true) {
+                    if (wasConnected() == true) {
                         drawBmp(nowButton);
                     } else {
                         drawBmp(nowButton);
