@@ -15,6 +15,10 @@ FileSystem::FileSystem(){
 }
 
 bool FileSystem::readCalibrationFile(uint8_t* calibrationData, uint8_t sz){
+#if HEADLESS
+    for (int i=0; i<sz; i++) calibrationData[i] = 0;
+    return true;
+#else
     bool result = false;
     if (SD.exists(CALIBRATION_FILE)) {
         File f = SD.open(CALIBRATION_FILE, "r");
@@ -26,13 +30,16 @@ bool FileSystem::readCalibrationFile(uint8_t* calibrationData, uint8_t sz){
     }
 
     return result;
+#endif
 }
 
 void FileSystem::writeCalibrationFile(const uint8_t* calibrationData, uint8_t sz) {
+#if !HEADLESS
     // store data
     File f = SD.open(CALIBRATION_FILE, "w");
     if (f) {
         f.write((const unsigned char *)calibrationData, sz);
         f.close();
     }
+#endif
 }

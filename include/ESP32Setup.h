@@ -2,8 +2,8 @@
 
 #include <analogWrite.h>
 
-//#define DEBUG_LOG
-//#define HEADLESS
+#define DEBUG_LOG 1
+#define HEADLESS 0
 #define PROXIMITY 1
 //#define TEST_TOUCH
 //#define DISABLE_BUTTON_PRESS

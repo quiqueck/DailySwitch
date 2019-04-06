@@ -37,7 +37,7 @@ class NopSerial {
     inline void println(void) const { }
 };
 
-#ifdef DEBUG_LOG
+#if DEBUG_LOG
 #define Console Serial
 #else
 extern NopSerial NullSerial;

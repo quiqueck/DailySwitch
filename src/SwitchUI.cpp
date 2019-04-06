@@ -39,6 +39,7 @@ uint32_t read32(fs::File &f) {
 }
 
 void SwitchUI::drawBmp(std::string filename) {
+#if !HEADLESS
     fs::File bmpFS;
 
     // Open requested file on SD card
@@ -74,6 +75,7 @@ void SwitchUI::drawBmp(std::string filename) {
     Console.println(" ms");
     
     bmpFS.close();
+#endif
 }
 
 void SwitchUI::drawLightLevelBack(){
@@ -118,6 +120,7 @@ void SwitchUI::drawBmp(std::string filename, const class Button* bt){
 }
 
 void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, bool toSprite, int16_t offX, int16_t offY) {
+#if !HEADLESS
     //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
     if (toSprite){
         if (offX < 0) {
@@ -190,10 +193,12 @@ void SwitchUI::drawBmp(std::string filename, int16_t x, int16_t y, int16_t wd, i
     
     bmpFS.close();
     //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
+#endif
 }
 
 
 void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t wd, int16_t hg, int16_t offX, int16_t offY) {
+#if !HEADLESS
     //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
     if (offX < 0) {
         wd += offX;
@@ -255,6 +260,7 @@ void SwitchUI::drawBmpAlpha(std::string filename, int16_t x, int16_t y, int16_t 
     
     bmpFS.close();
     //Console.print("freeMemory()="); Console.println(ESP.getFreeHeap());
+#endif
 }
 
 
@@ -283,7 +289,7 @@ struct DefInput {
 
 void SwitchUI::ReadDefinitions(const char *filename) {
     fs::File defFS;
-
+#if !HEADLESS
     // Open requested file on SD card
     defFS = SD.open(filename, "r");
 
@@ -359,6 +365,7 @@ void SwitchUI::ReadDefinitions(const char *filename) {
     Console.println(" ms");
     
     defFS.close();
+#endif
 }
 
 SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::function<void(bool)> touchRoutine, bool force_calibration):tft(TFT_eSPI()), pressRoutine(pressRoutine), touchRoutine(touchRoutine), spr(mySprite(&tft)){
@@ -397,7 +404,7 @@ SwitchUI::SwitchUI(std::function<void(uint8_t, uint8_t)> pressRoutine, std::func
 }
 
 void SwitchUI::prepareTouchCalibration(bool force_calibration){
-#ifndef HEADLESS
+#if !HEADLESS
     Console.println("Read Calibration Data");   
     // check if calibration file exists
     bool calDataOK = false;
@@ -413,12 +420,12 @@ void SwitchUI::prepareTouchCalibration(bool force_calibration){
         startTouchCalibration();
     }
 #else
-    FileSystem::init();
+    //FileSystem::init();
 #endif
 }
 
 void SwitchUI::startTouchCalibration(){
-#ifndef HEADLESS
+#if !HEADLESS
   Console.println("Prepare Calibrating Touch");
 
   tft.fillScreen(TFT_WHITE);

@@ -4,7 +4,7 @@
 #include "WeatherKey.h"
 #include "NopSerial.h"
 
-#define WEATHER
+#define WEATHER 1
 
 class Weather {
     public:

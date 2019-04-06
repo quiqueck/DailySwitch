@@ -101,8 +101,9 @@ void setup()
     //pinMode(LED,OUTPUT);
     //pinMode(SDCARD_CS, OUTPUT);
     //digitalWrite(SDCARD_CS, HIGH);
-
+#if !HEADLESS
     FileSystem::init();
+#endif
 
 #if PROXIMITY
     Proximity::begin();
@@ -110,7 +111,7 @@ void setup()
     
 
     ui = new SwitchUI(buttonEvent, touchPanelEvent, false);
-#ifdef HEADLESS
+#if HEADLESS
     dbss = new DailyBluetoothSwitchServer("HL.001");
 #else
     dbss = new DailyBluetoothSwitchServer("001");
@@ -160,7 +161,7 @@ void setup()
     sampling_period_us = round(1000000*(1.0/samplingFrequency));
     #endif
 
-    #ifdef WEATHER
+    #if WEATHER
         if (!Weather::begin(ui)){        
             Console.println("Could not initialize Weather API.");
         }
@@ -223,8 +224,10 @@ void loop()
     }
 
 	t1->read();
+#if !HEADLESS
     ui->scanTouch();
-#ifdef WEATHER
+#endif
+#if WEATHER
     //if (logMem()){
        Weather::global()->tick();           
     //}
