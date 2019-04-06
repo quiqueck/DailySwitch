@@ -8,10 +8,10 @@
 #include "ESP32Setup.h"
 #include "NopSerial.h"
 #include "esp_pm.h"
-#ifdef PROXIMITY
+#if PROXIMITY 
 #include <Adafruit_APDS9960.h>
-
-#define INT_PIN GPIO_NUM_32
+Adafruit_APDS9960 apds;
+#define PROXIMITY_INT_PIN GPIO_NUM_32
 #endif
 
 #include "TouchPin.h"
@@ -106,6 +106,19 @@ void setup()
     //digitalWrite(SDCARD_CS, HIGH);
 
     FileSystem::init();
+
+#if PROXIMITY
+    if(!apds.begin(10, APDS9960_AGAIN_64X, APDS9960_ADDRESS, &Wire, IC2_DAT, IC2_CLK, IC2_FREQUENCY)){
+        Serial.println(F("Failed to initialize Proximity! Please check your wiring."));
+    } else {
+        Serial.println(F("Proximity available"));
+        apds.enableProximity(true);
+        apds.setProxPulse(APDS9960_PPULSELEN_32US, 64);
+        apds.setProximityInterruptThreshold(0, 29);
+        //apds.setLED(APDS9960_LEDDRIVE_100MA, APDS9960_LEDBOOST_300PCNT);
+        apds.enableProximityInterrupt();
+    }
+#endif
     
 
     ui = new SwitchUI(buttonEvent, touchPanelEvent, false);
@@ -200,12 +213,17 @@ bool logMem(){
 }
 
 void loop()
-{
-    //turn off LED
-    /*digitalWrite(LED, LOW); 
-    delay(500);
-    digitalWrite(LED, HIGH); 
-    delay(1500);*/
+{    
+    Serial.println("loop");
+#if PROXIMITY    
+    if(!digitalRead(PROXIMITY_INT_PIN)){
+        Console.println(apds.readProximity());
+        SleepTimer::global()->invalidate();
+        apds.clearInterrupt();
+    } else {
+        Serial.println(apds.readProximity());
+    }
+#endif
 
     static uint32_t count = 1000;
     count++;
