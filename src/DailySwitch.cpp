@@ -226,6 +226,13 @@ void loop()
 	t1->read();
 #if !HEADLESS
     ui->scanTouch();
+#else
+    static unsigned long lastBlast = millis();
+    unsigned long blast = millis();
+    if (blast-lastBlast > 5000){
+        lastBlast = blast;
+        buttonEvent(100, 1);
+    }
 #endif
 #if WEATHER
     //if (logMem()){
