@@ -232,8 +232,13 @@ let buttons = [
         page:1
     },
     {l:317, t:28, w:70, h:52, 
-        type:SELECT, id:5, state:OFF,
+        type:SWITCH, id:5, state:OFF,
         altState:ON, name:"SPECIAL",
+        page:1
+    },
+    {l:317, t:304, w:70, h:52, 
+        type:SELECT, id:5, state:ON,
+        name:"XMAS",
         page:1
     },
     {l:317, t:100, w:70, h:52, 
@@ -302,11 +307,6 @@ let buttons = [
         type:SELECT, id:17, state:ON,
         name:"WZ_LED",
         page:2
-    },
-    {l:317, t:228, w:70, h:52, 
-        type:SELECT, id:18, state:ON,
-        name:"XMAS",
-        page:1
     },
     
     
