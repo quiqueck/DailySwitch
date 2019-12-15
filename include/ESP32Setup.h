@@ -5,6 +5,8 @@
 #define DEBUG_LOG 0
 #define HEADLESS 0
 #define PROXIMITY 1
+#define USE_BT 0
+#define DEBUG_WIFI_TARGET 0
 //#define TEST_TOUCH
 //#define DISABLE_BUTTON_PRESS
 //#define SI7021_DRIVER  //Temperature/Humidity

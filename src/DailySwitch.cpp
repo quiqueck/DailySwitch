@@ -10,6 +10,8 @@
 #include "esp_pm.h"
 
 
+
+
 #include "TouchPin.h"
 #include "SwitchUI.h"
 #include "SleepTimer.h"
@@ -203,6 +205,7 @@ bool logMem(){
 
 void loop()
 {    
+    dbss->tick();
 #if PROXIMITY    
     Proximity::global()->tick();    
 #endif
@@ -218,7 +221,7 @@ void loop()
         Console.println(F("Starting Calibration..."));
         SleepTimer::global()->invalidate();
         SleepTimer::global()->stop();
-        ui->startTouchCalibration();
+        //ui->startTouchCalibration();
         triggerCalibration = false;
         SleepTimer::global()->start();
     }

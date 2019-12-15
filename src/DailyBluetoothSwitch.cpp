@@ -1,4 +1,5 @@
 #include "DailyBluetoothSwitch.h"
+#if USE_BT==1
 
 DailyBluetoothSwitchServer::DailyBluetoothSwitchServer(std::string name){
     whenConnected = NULL;
@@ -71,3 +72,6 @@ void DailyBluetoothSwitchServer::onDisconnect(BLEServer* pServer) {
         whenConnected(false);
     }
 }
+
+void DailyBluetoothSwitchServer::tick() {}
+#endif

@@ -1,6 +1,5 @@
 #include "Weather.h"
 #include "SwitchUI.h"
-#include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <soc/rtc.h>
@@ -86,21 +85,24 @@ void Weather::startWiFi(){
     if (WiFi.status() == WL_CONNECTED){
         return;
     }
-    Console.print("Connecting to ");
+#if USE_BT==1 
+    Console.print("[Weather] Connecting to ");
     Console.println(ssid);
     WiFi.mode(WIFI_STA);
     WiFi.setSleep(true);
     WiFi.begin(ssid, password);   
-    //WiFi.setTxPower(WIFI_POWER_19_5dBm);  
+    //WiFi.setTxPower(WIFI_POWER_19_5dBm);
+#endif  
 }
 
 void Weather::stopWiFi(){
-    
-    Console.println("Turnin off WiFi."); 
-    //WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);   
+#if USE_BT==1  
+    Console.println("[Weather] Turnin off WiFi."); 
+    //WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
     WiFi.disconnect();    
     WiFi.setSleep(true);
     WiFi.mode(WIFI_OFF);
+#endif
 }
 
 float Weather::temperature() const{
@@ -132,7 +134,7 @@ bool Weather::readData(){
     bool hasNewData = false;
     //https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22 
 
-    Console.printf("\n  Starting connection to %s ...\n", host);
+    Console.printf("\n  [Weather] Starting connection to %s ...\n", host);
     //Console.print("freeMemory()="); Console.print(ESP.getFreeHeap()); Console.print(" "); Console.println(ESP.getFreePsram());
     const uint16_t startTime = millis();
     std::string request = std::string("http://") + host + "/" + basePath + "/weather?lat=" + LAT + "&lon=" + LON + "&appid=" + key + "&units=metric";
@@ -152,7 +154,7 @@ bool Weather::readData(){
 
             // Test if parsing succeeds.
             if (error) {
-                Console.print(F("  deserializeJson() failed: "));
+                Console.print(F("  [Weather] deserializeJson() failed: "));
                 Console.println(error.c_str());                
             } else {
                 hasNewData = true;
@@ -160,13 +162,13 @@ bool Weather::readData(){
             }
             //Console.println(payload);
         } else {
-           Console.printf("  HTTP request returned %d\n", httpCode); 
+           Console.printf("  [Weather] HTTP request returned %d\n", httpCode); 
         }
     } else {
-      Console.println(F("  Error on HTTP request"));
+      Console.println(F("  [Weather] Error on HTTP request"));
     }
  
-    Console.printf("  Finished in %lu ms\n", millis() - startTime);
+    Console.printf("  [Weather] Finished in %lu ms\n", millis() - startTime);
     http.end(); //Free the resources
     //Console.print("freeMemory()="); Console.print(ESP.getFreeHeap()); Console.print(" "); Console.println(ESP.getFreePsram());
 
@@ -176,7 +178,7 @@ bool Weather::readData(){
 void Weather::update(){
     lastUpdateCall = millis();
     if (state == WeatherUpdateState::IDLE || state == WeatherUpdateState::INIT) {
-        Console.println("Updating Weather Info...\n");        
+        Console.println("[Weather] Updating Weather Info...\n");        
         startWiFi();  
         state = WeatherUpdateState::CONNECTING;  
         wifiRetries = 100;                      
@@ -189,22 +191,22 @@ void Weather::update(){
             }
         } else {
             Console.println("");
-            Console.println("  WiFi connection failed");
+            Console.println("  [Weather] WiFi connection failed");
             stopWiFi();
             state = WeatherUpdateState::IDLE;
         }
     } if (state == WeatherUpdateState::CONNECTED){
         Console.println("");
-        Console.print("  WiFi connected as ");        
+        Console.print("  [Weather] WiFi connected as ");        
         Console.println(WiFi.localIP());
         state = WeatherUpdateState::LOADING;
         bool hasNew = readData();
         //deffer ui updates to preven heap from fragmenting
         state = hasNew?WeatherUpdateState::UIUPDATE:WeatherUpdateState::IDLE;
-        Console.print("  Weather Updated finished\n");  
+        Console.print("  [Weather] Updated finished\n");  
         stopWiFi();
     } if (state == WeatherUpdateState::UIUPDATE){
-        Console.print("  Weather sent UI-Update\n");  
+        Console.print("  [Weather] sent UI-Update\n");  
         ui->weatherChanged(this);
         state = WeatherUpdateState::IDLE;
     }

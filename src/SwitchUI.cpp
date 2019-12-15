@@ -489,7 +489,8 @@ void SwitchUI::drawTemperatureState(){
         spr.setTextSize(1);
         spr.setTextDatum(TC_DATUM);
         
-        spr.setTextColor(TFT_BLACK, TFT_WHITE);
+        //spr.setTextColor(TFT_BLACK, TFT_WHITE);
+        spr.setTextColor(TFT_WHITE, TFT_BLACK);
 
         String txt = (String)((int) w->temperature())+"°";
         int16_t wd = spr.textWidth(txt);
@@ -591,10 +592,11 @@ void SwitchUI::drawInternalState(){
 
 void SwitchUI::drawConnectionState(){
     tft.loadFont("RCR12");
-    tft.fillRect(406, 305, 74, 15, TFT_WHITE);
+    tft.fillRect(406, 305, 74, 15, TFT_BLACK);
     tft.setTextDatum(TC_DATUM);
     tft.setCursor(443, 305, 2);
-    tft.setTextColor(TFT_BLACK, TFT_WHITE);  tft.setTextSize(1);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);  
+    tft.setTextSize(1);
     
     if (wasConnected()) tft.drawCentreString("verbunden", 443, 306, 2);
     else tft.drawCentreString("suche...", 443, 306, 2);
