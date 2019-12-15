@@ -2,9 +2,11 @@
 
 #include <analogWrite.h>
 
-//#define DEBUG_LOG
-//#define HEADLESS
-#define PROXIMITY
+#define DEBUG_LOG 0
+#define HEADLESS 0
+#define PROXIMITY 1
+#define USE_BT 0
+#define DEBUG_WIFI_TARGET 0
 //#define TEST_TOUCH
 //#define DISABLE_BUTTON_PRESS
 //#define SI7021_DRIVER  //Temperature/Humidity
@@ -33,6 +35,9 @@
 #define LED GPIO_NUM_2
 
 #define AUDIO_PIN GPIO_NUM_34
+
+
+#define PROXIMITY_INT_PIN GPIO_NUM_33
 
 /*#define LOAD_GLCD   // Font 1. Original Adafruit 8 pixel font needs ~1820 bytes in FLASH
 #define LOAD_FONT2  // Font 2. Small 16 pixel high font, needs ~3534 bytes in FLASH, 96 characters

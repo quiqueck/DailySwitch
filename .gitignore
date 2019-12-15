@@ -11,3 +11,5 @@ c_cpp_properties.json
 launch.json
 WeatherKey.h
 testwww
+.pio
+Artwork/converter_default/node_modules

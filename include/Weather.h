@@ -3,8 +3,9 @@
 #include <Arduino.h>
 #include "WeatherKey.h"
 #include "NopSerial.h"
+#include "ESP32Setup.h"
 
-#define WEATHER
+#define WEATHER 1
 
 class Weather {
     public:

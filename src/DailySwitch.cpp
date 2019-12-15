@@ -8,11 +8,9 @@
 #include "ESP32Setup.h"
 #include "NopSerial.h"
 #include "esp_pm.h"
-#ifdef PROXIMITY
-#include <Adafruit_APDS9960.h>
 
-#define INT_PIN GPIO_NUM_32
-#endif
+
+
 
 #include "TouchPin.h"
 #include "SwitchUI.h"
@@ -20,6 +18,7 @@
 #include "FileSystem.h"
 
 #include "Weather.h"
+#include "Proximity.h"
 #include "DailyBluetoothSwitch.h"
 
 void stateChanged(bool state);
@@ -104,12 +103,17 @@ void setup()
     //pinMode(LED,OUTPUT);
     //pinMode(SDCARD_CS, OUTPUT);
     //digitalWrite(SDCARD_CS, HIGH);
-
+#if !HEADLESS
     FileSystem::init();
+#endif
+
+#if PROXIMITY
+    Proximity::begin();
+#endif
     
 
     ui = new SwitchUI(buttonEvent, touchPanelEvent, false);
-#ifdef HEADLESS
+#if HEADLESS
     dbss = new DailyBluetoothSwitchServer("HL.001");
 #else
     dbss = new DailyBluetoothSwitchServer("001");
@@ -159,7 +163,7 @@ void setup()
     sampling_period_us = round(1000000*(1.0/samplingFrequency));
     #endif
 
-    #ifdef WEATHER
+    #if WEATHER
         if (!Weather::begin(ui)){        
             Console.println("Could not initialize Weather API.");
         }
@@ -200,12 +204,11 @@ bool logMem(){
 }
 
 void loop()
-{
-    //turn off LED
-    /*digitalWrite(LED, LOW); 
-    delay(500);
-    digitalWrite(LED, HIGH); 
-    delay(1500);*/
+{    
+    dbss->tick();
+#if PROXIMITY    
+    Proximity::global()->tick();    
+#endif
 
     static uint32_t count = 1000;
     count++;
@@ -218,14 +221,23 @@ void loop()
         Console.println(F("Starting Calibration..."));
         SleepTimer::global()->invalidate();
         SleepTimer::global()->stop();
-        ui->startTouchCalibration();
+        //ui->startTouchCalibration();
         triggerCalibration = false;
         SleepTimer::global()->start();
     }
 
 	t1->read();
+#if !HEADLESS
     ui->scanTouch();
-#ifdef WEATHER
+#else
+    static unsigned long lastBlast = millis();
+    unsigned long blast = millis();
+    if (blast-lastBlast > 5000){
+        lastBlast = blast;
+        buttonEvent(100, 1);
+    }
+#endif
+#if WEATHER
     //if (logMem()){
        Weather::global()->tick();           
     //}

@@ -45,6 +45,12 @@ const uint8_t SleepTimer::reduceBrightnessAt = 3;
 const uint8_t SleepTimer::noBacklightAt = 6;
 const uint8_t SleepTimer::displayOffAt = 9;
 
+void SleepTimer::sleepNow(){
+    setState(displayOffAt+1);
+    setState(displayOffAt+2);
+    setState(displayOffAt+3);
+}
+
 //unsigned long lastStateChange = 0;
 void SleepTimer::setState(uint8_t s) {
 #ifdef TEST_TOUCH
